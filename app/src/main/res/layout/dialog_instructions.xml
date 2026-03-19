@@ -92,7 +92,7 @@
                 <LinearLayout style="@style/InstrTextCol">
                     <TextView style="@style/InstrTitle" android:text="Shield" />
                     <TextView style="@style/InstrBody"
-                        android:text="Earn a shield on a 5-hit streak, every 20 catches, or on level-up. It blocks one miss — saving your score and level." />
+                        android:text="Earn a shield on a 4-hit streak, every 20 catches, or on level-up. It blocks one miss — saving your score and level." />
                 </LinearLayout>
             </LinearLayout>
 

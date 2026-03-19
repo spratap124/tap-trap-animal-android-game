@@ -343,9 +343,9 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
         coins += if (bonusCoinsActive) (comboCoins + 1) * 2 else comboCoins
 
         // Award shield on first time reaching a 5-streak
-        if (trapStreak == 5 && shieldCount < MAX_SHIELDS) {
+        if (trapStreak == 4 && shieldCount < MAX_SHIELDS) {
             shieldCount++
-            showToast("🛡️ Shield earned for 5-streak!")
+            showToast("🛡️ Shield earned for 4-streak!")
             updatePowerUpBar()
         }
 
