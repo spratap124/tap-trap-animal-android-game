@@ -55,10 +55,15 @@ class GameView @JvmOverloads constructor(
 
     private val density get() = context.resources.displayMetrics.density
 
-    // Collision thresholds (in dp, converted to px on use)
-    private val trapThresholdDp = 55f
-    private val foodThresholdDp = 44f
+    // emojiSizeDp only drives maxPos() so the animal can't go off-screen
     private val emojiSizeDp = 52f
+
+    // Hit zones are derived from the actual rendered emoji size so they scale
+    // correctly on every screen density, avoiding false positives on dense displays.
+    // 0.65× the emoji height = roughly the visual width of a square emoji.
+    private val trapHitPx  get() = animalPaint.textSize * 0.65f
+    private val foodHitPx  get() = foodPaint.textSize  * 0.75f
+    private val bonusHitPx get() = bonusPaint.textSize * 0.65f
 
     val particles = mutableListOf<Particle>()
 
@@ -216,13 +221,11 @@ class GameView @JvmOverloads constructor(
     }
 
     fun checkTap(): TapResult {
-        val trapPx = trapThresholdDp * density
-        val foodPx = foodThresholdDp * density
         return when {
-            bonusX >= 0f && abs(pos - bonusX) < foodPx -> TapResult.BONUS_HIT
-            abs(pos - trapPos) < trapPx -> TapResult.TRAP_HIT
-            abs(pos - foodX) < foodPx -> TapResult.FOOD_HIT
-            else -> TapResult.MISS
+            bonusX >= 0f && abs(pos - bonusX) < bonusHitPx -> TapResult.BONUS_HIT
+            abs(pos - trapPos) < trapHitPx               -> TapResult.TRAP_HIT
+            abs(pos - foodX)   < foodHitPx               -> TapResult.FOOD_HIT
+            else                                          -> TapResult.MISS
         }
     }
 
