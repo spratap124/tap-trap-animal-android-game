@@ -349,7 +349,7 @@
         android:textSize="24sp"
         android:background="@drawable/btn_primary_bg"
         android:stateListAnimator="@null"
-        android:layout_marginEnd="12dp"
+        android:layout_marginEnd="24dp"
         app:layout_constraintTop_toTopOf="@id/tapBtn"
         app:layout_constraintBottom_toBottomOf="@id/tapBtn"
         app:layout_constraintEnd_toStartOf="@id/tapBtn" />
@@ -361,7 +361,7 @@
         android:layout_height="wrap_content"
         android:text="🛒"
         android:textSize="30sp"
-        android:layout_marginStart="12dp"
+        android:layout_marginStart="24dp"
         android:clickable="true"
         android:focusable="true"
         app:layout_constraintTop_toTopOf="@id/tapBtn"
