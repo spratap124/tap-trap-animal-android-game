@@ -228,6 +228,9 @@ class GameView @JvmOverloads constructor(
         }
     }
 
+    /** True when the animal just barely missed the trap (within 2× hit zone). */
+    fun isNearMiss(): Boolean = abs(pos - trapPos) < trapHitPx * 2f
+
     fun spawnFood() {
         val max = maxPos()
         if (max <= 0f) return

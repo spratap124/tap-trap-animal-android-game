@@ -101,6 +101,8 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
 
     // --- Ads ---
     private lateinit var adManager: AdManager
+    private var gameOverCount = 0          // lifetime counter for frequency cap
+    private var streakOfferShownAt = 0     // trapStreak value when offer was last shown
 
     // --- View binding ---
     private lateinit var binding: ActivityMainBinding
@@ -386,6 +388,13 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
 
         if (trapStreak >= 2) showComboPop()
 
+        // Streak protection offer: once when combo hits 6 and no shield available
+        if (combo == 6 && shieldCount == 0 && streakOfferShownAt != combo
+            && adManager.isRewardedReady) {
+            streakOfferShownAt = combo
+            showStreakProtectionOffer()
+        }
+
         // Reset combo decay countdown after every successful hit
         mainHandler.removeCallbacks(comboDecayRunnable)
         mainHandler.postDelayed(comboDecayRunnable, COMBO_DECAY_DELAY_MS)
@@ -407,6 +416,68 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
     }
 
     private fun onMiss() {
+        playSound(soundGameOver)
+        flashGameOver()
+        binding.gameView.stopLoop()
+        setControlsState()
+        showGameOverDialog(nearMiss = binding.gameView.isNearMiss())
+    }
+
+    // ── Game Over dialog ─────────────────────────────────────────────────
+    private fun showGameOverDialog(nearMiss: Boolean) {
+        val dialog = android.app.Dialog(this, R.style.ShopDialogTheme)
+        dialog.requestWindowFeature(android.view.Window.FEATURE_NO_TITLE)
+        dialog.setContentView(R.layout.dialog_game_over)
+        dialog.setCancelable(false)
+        dialog.window?.setLayout(
+            (resources.displayMetrics.widthPixels * 0.88).toInt(),
+            android.view.ViewGroup.LayoutParams.WRAP_CONTENT
+        )
+
+        dialog.findViewById<TextView>(R.id.gameOverScore).text = score.toString()
+        dialog.findViewById<TextView>(R.id.gameOverLevel).text = level.toString()
+        dialog.findViewById<TextView>(R.id.gameOverCombo).text = "x$combo"
+
+        if (nearMiss) {
+            dialog.findViewById<TextView>(R.id.gameOverSubtitle).visibility = View.VISIBLE
+            dialog.findViewById<TextView>(R.id.gameOverIcon).text = "😱"
+        }
+
+        val continueBtn = dialog.findViewById<android.widget.Button>(R.id.btnContinueAd)
+        if (!adManager.isRewardedReady) {
+            continueBtn.isEnabled = false
+            continueBtn.text = "📺 Ad Loading…"
+        }
+
+        continueBtn.setOnClickListener {
+            dialog.dismiss()
+            adManager.showRewardedAd(
+                onRewarded = { continueGame() },
+                onDismissed = {
+                    // User skipped the ad — do a full reset instead
+                    doFullReset()
+                }
+            )
+        }
+
+        dialog.findViewById<android.widget.Button>(R.id.btnRestart).setOnClickListener {
+            dialog.dismiss()
+            doFullReset()
+        }
+
+        dialog.show()
+    }
+
+    /** Resume after watching a Continue ad — nothing is reset. */
+    private fun continueGame() {
+        binding.gameView.startLoop()
+        setControlsState()
+        showToast("✅ Streak saved! Keep going!")
+        binding.gameView.sparkle(big = true)
+    }
+
+    /** Full reset after choosing Restart (or skipping the Continue ad). */
+    private fun doFullReset() {
         combo = 1
         trapStreak = 0
         lastTrapHitAt = 0
@@ -417,25 +488,25 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
         shieldCount = 0
         bonusCoinsActive = false
         bonusCatchCount = 0
+        streakOfferShownAt = 0
         binding.gameView.clearBonus()
         mainHandler.removeCallbacks(bonusExpireRunnable)
         mainHandler.removeCallbacks(comboDecayRunnable)
         binding.gameView.applyLevel(level)
-        playSound(soundGameOver)
-        flashGameOver()
         binding.gameView.centerTrap()
         updateLevelUI()
         updatePowerUpBar()
+        updateUI()
+        savePrefs()
 
-        // Show interstitial ad on every game over — game is paused so timing is fine
-        binding.gameView.stopLoop()
-        setControlsState()
-        adManager.showInterstitial {
-            // Ad dismissed — nothing to do, player taps Play to restart
+        // Interstitial only every 3rd game over, never on the very first
+        gameOverCount++
+        if (gameOverCount > 1 && gameOverCount % 3 == 0) {
+            adManager.showInterstitial {}
         }
     }
 
-    // ── Watch Ad for free shield ──────────────────────────────────────────
+    // ── Watch Ad for free shield ─────────────────────────────────────────
     private fun watchAdForShield() {
         if (shieldCount >= MAX_SHIELDS) {
             showToast("🛡️ Already at max shields!")
@@ -454,6 +525,44 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
                     binding.gameView.sparkle(big = true)
                     savePrefs()
                 }
+            }
+        )
+    }
+
+    // ── Streak protection offer ──────────────────────────────────────────
+    private fun showStreakProtectionOffer() {
+        val dialog = android.app.AlertDialog.Builder(this, R.style.ShopDialogTheme)
+            .setMessage("🔥 Hot streak! Protect it with a shield?\nWatch a short ad for a free 🛡️")
+            .setPositiveButton("📺 Yes, protect!") { _, _ ->
+                adManager.showRewardedAd(
+                    onRewarded = {
+                        if (shieldCount < MAX_SHIELDS) {
+                            shieldCount++
+                            updatePowerUpBar()
+                            showToast("🛡️ Streak protected!")
+                            binding.gameView.sparkle(big = true)
+                            savePrefs()
+                        }
+                    }
+                )
+            }
+            .setNegativeButton("Not now", null)
+            .create()
+        dialog.show()
+    }
+
+    // ── Watch Ad for coins ───────────────────────────────────────────────
+    fun watchAdForCoins() {
+        if (!adManager.isRewardedReady) {
+            showToast("📺 Ad not ready yet…")
+            return
+        }
+        adManager.showRewardedAd(
+            onRewarded = {
+                coins += 100
+                showToast("🪙 +100 coins!")
+                updateUI()
+                savePrefs()
             }
         )
     }
@@ -700,6 +809,25 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
             onBuy, onWatchAd
         )
         recycler.adapter = adapter
+
+        // Watch Ad → +100 coins strip
+        val watchAdCoinsBtn = dialog.findViewById<android.widget.Button>(R.id.shopWatchAdCoinsBtn)
+        watchAdCoinsBtn.isEnabled = adManager.isRewardedReady
+        watchAdCoinsBtn.setOnClickListener {
+            adManager.showRewardedAd(
+                onRewarded = {
+                    coins += 100
+                    updateUI()
+                    shopCoinsText.text = "$coins 🪙"
+                    adapter.updateCoins(coins)
+                    savePrefs()
+                    showToast("🪙 +100 coins!")
+                },
+                onDismissed = {
+                    watchAdCoinsBtn.isEnabled = adManager.isRewardedReady
+                }
+            )
+        }
 
         dialog.findViewById<View>(R.id.shopCloseBtn).setOnClickListener {
             dialog.dismiss()
