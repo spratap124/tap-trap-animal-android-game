@@ -287,7 +287,7 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
 
     private fun setControlsState() {
         val running = binding.gameView.gameRunning
-        binding.playPauseBtn.text = if (running) "Stop" else "Start"
+        binding.playPauseBtn.text = if (running) "⏹" else "▶"
         binding.playPauseBtn.setBackgroundResource(
             if (running) R.drawable.btn_danger_bg else R.drawable.btn_primary_bg
         )

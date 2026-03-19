@@ -289,8 +289,8 @@
     </LinearLayout>
 
     <!-- ── Power-up status bar (shield / double-coins) ─────────────────── -->
-    <!-- Floats above the tap button — not part of the vertical chain so it
-         never pushes the play/pause button down on small screens. -->
+    <!-- Anchored above the play/pause button on the left — clear of the HUD,
+         soundBtn, and shopBtn on all screen sizes. -->
     <TextView
         android:id="@+id/powerUpBar"
         android:layout_width="wrap_content"
@@ -299,31 +299,29 @@
         android:text="🛡️ ×1"
         android:textColor="#ffd700"
         android:textStyle="bold"
-        android:textSize="13sp"
-        android:paddingHorizontal="14dp"
+        android:textSize="12sp"
+        android:paddingHorizontal="12dp"
         android:paddingVertical="5dp"
         android:background="@drawable/badge_bg"
         android:gravity="center"
         android:elevation="8dp"
-        android:layout_marginBottom="10dp"
-        app:layout_constraintBottom_toTopOf="@id/tapBtn"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent" />
+        android:layout_marginStart="16dp"
+        android:layout_marginBottom="6dp"
+        app:layout_constraintBottom_toTopOf="@id/playPauseBtn"
+        app:layout_constraintStart_toStartOf="parent" />
 
-    <!-- ── Start / Stop button (bottom-left, mirrors shopBtn) ──────────── -->
+    <!-- ── Play / Pause button (bottom-left, icon style) ───────────────── -->
     <Button
         android:id="@+id/playPauseBtn"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="Start"
+        android:layout_width="60dp"
+        android:layout_height="60dp"
+        android:text="▶"
         android:textColor="#ffffff"
-        android:textStyle="bold"
-        android:textSize="14sp"
-        android:paddingHorizontal="18dp"
-        android:paddingVertical="12dp"
+        android:textSize="24sp"
         android:background="@drawable/btn_primary_bg"
         android:layout_marginStart="16dp"
         android:layout_marginBottom="16dp"
+        android:stateListAnimator="@null"
         app:layout_constraintBottom_toBottomOf="@id/tapBtn"
         app:layout_constraintStart_toStartOf="parent" />
 
