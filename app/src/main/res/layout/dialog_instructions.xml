@@ -56,7 +56,7 @@
                 <LinearLayout style="@style/InstrTextCol">
                     <TextView style="@style/InstrTitle" android:text="Tap the Trap" />
                     <TextView style="@style/InstrBody"
-                        android:text="Hit ⚡ when the animal overlaps the 🎯 target. The closer the better!" />
+                        android:text="Hit ⚡ when the animal overlaps the 🥅 net. The closer the better!" />
                 </LinearLayout>
             </LinearLayout>
 

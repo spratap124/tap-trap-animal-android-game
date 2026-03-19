@@ -40,7 +40,7 @@ class GameView @JvmOverloads constructor(
     // Emojis
     var animalEmoji = "🐭"
     var foodEmoji = "🧀"
-    private val trapEmoji = "🎯"
+    private val trapEmoji = "🥅"
 
     // Game state (all positions in pixels)
     var pos = 0f
