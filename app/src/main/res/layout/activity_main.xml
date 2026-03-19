@@ -215,13 +215,13 @@
         <!-- Row 1 -->
         <LinearLayout
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
+            android:layout_height="@dimen/hud_row_height"
             android:orientation="horizontal">
 
             <!-- Score -->
             <LinearLayout
                 android:layout_width="0dp"
-                android:layout_height="wrap_content"
+                android:layout_height="match_parent"
                 android:layout_weight="1"
                 android:layout_margin="6dp"
                 android:paddingVertical="@dimen/hud_padding_v"
@@ -248,7 +248,7 @@
             <!-- Combo -->
             <LinearLayout
                 android:layout_width="0dp"
-                android:layout_height="wrap_content"
+                android:layout_height="match_parent"
                 android:layout_weight="1"
                 android:layout_margin="6dp"
                 android:paddingVertical="@dimen/hud_padding_v"
@@ -276,13 +276,13 @@
         <!-- Row 2 -->
         <LinearLayout
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
+            android:layout_height="@dimen/hud_row_height"
             android:orientation="horizontal">
 
             <!-- Coins -->
             <LinearLayout
                 android:layout_width="0dp"
-                android:layout_height="wrap_content"
+                android:layout_height="match_parent"
                 android:layout_weight="1"
                 android:layout_margin="6dp"
                 android:paddingVertical="@dimen/hud_padding_v"
@@ -309,7 +309,7 @@
             <!-- High score -->
             <LinearLayout
                 android:layout_width="0dp"
-                android:layout_height="wrap_content"
+                android:layout_height="match_parent"
                 android:layout_weight="1"
                 android:layout_margin="6dp"
                 android:paddingVertical="@dimen/hud_padding_v"

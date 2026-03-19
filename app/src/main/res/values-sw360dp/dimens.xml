@@ -4,8 +4,9 @@
     <!-- HUD boxes -->
     <dimen name="hud_icon_size">16sp</dimen>
     <dimen name="hud_value_size">22sp</dimen>
-    <dimen name="hud_high_size">16sp</dimen>
+    <dimen name="hud_high_size">22sp</dimen>
     <dimen name="hud_padding_v">4dp</dimen>
+    <dimen name="hud_row_height">84dp</dimen>
 
     <!-- Tap button -->
     <dimen name="tap_btn_size">130dp</dimen>
