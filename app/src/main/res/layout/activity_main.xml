@@ -115,17 +115,23 @@
     <!-- ── Animal name pill ──────────────────────────────────────────────── -->
     <TextView
         android:id="@+id/animalNameText"
-        android:layout_width="wrap_content"
+        android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:text="🐭  RAT"
         android:textColor="#ffffff"
-        android:textSize="17sp"
         android:textStyle="bold"
         android:letterSpacing="0.1"
+        android:maxLines="1"
+        android:gravity="center"
         android:paddingHorizontal="24dp"
-        android:paddingVertical="11dp"
+        android:paddingVertical="8dp"
         android:background="@drawable/animal_name_bg"
-        android:layout_marginTop="10dp"
+        android:layout_marginTop="8dp"
+        app:autoSizeTextType="uniform"
+        app:autoSizeMinTextSize="10sp"
+        app:autoSizeMaxTextSize="17sp"
+        app:autoSizeStepGranularity="1sp"
+        app:layout_constraintWidth_percent="0.65"
         app:layout_constraintTop_toBottomOf="@id/levelBadgeRow"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent" />
@@ -170,7 +176,7 @@
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
                 android:layout_margin="6dp"
-                android:paddingVertical="8dp"
+                android:paddingVertical="@dimen/hud_padding_v"
                 android:orientation="vertical"
                 android:gravity="center"
                 android:background="@drawable/hud_box_bg">
@@ -178,14 +184,14 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="⭐"
-                    android:textSize="22sp"
+                    android:textSize="@dimen/hud_icon_size"
                     android:textColor="#ffffff" />
                 <TextView
                     android:id="@+id/scoreText"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="0"
-                    android:textSize="28sp"
+                    android:textSize="@dimen/hud_value_size"
                     android:textColor="#ffffff"
                     android:textStyle="bold"
                     android:layout_marginTop="4dp" />
@@ -197,7 +203,7 @@
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
                 android:layout_margin="6dp"
-                android:paddingVertical="8dp"
+                android:paddingVertical="@dimen/hud_padding_v"
                 android:orientation="vertical"
                 android:gravity="center"
                 android:background="@drawable/hud_box_bg">
@@ -205,14 +211,14 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="🔥"
-                    android:textSize="22sp"
+                    android:textSize="@dimen/hud_icon_size"
                     android:textColor="#ffffff" />
                 <TextView
                     android:id="@+id/comboText"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="x1"
-                    android:textSize="28sp"
+                    android:textSize="@dimen/hud_value_size"
                     android:textColor="#ffffff"
                     android:textStyle="bold"
                     android:layout_marginTop="4dp" />
@@ -231,7 +237,7 @@
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
                 android:layout_margin="6dp"
-                android:paddingVertical="8dp"
+                android:paddingVertical="@dimen/hud_padding_v"
                 android:orientation="vertical"
                 android:gravity="center"
                 android:background="@drawable/hud_box_bg">
@@ -239,14 +245,14 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="🪙"
-                    android:textSize="22sp"
+                    android:textSize="@dimen/hud_icon_size"
                     android:textColor="#ffffff" />
                 <TextView
                     android:id="@+id/coinsText"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="0"
-                    android:textSize="28sp"
+                    android:textSize="@dimen/hud_value_size"
                     android:textColor="#ffffff"
                     android:textStyle="bold"
                     android:layout_marginTop="4dp" />
@@ -258,7 +264,7 @@
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
                 android:layout_margin="6dp"
-                android:paddingVertical="8dp"
+                android:paddingVertical="@dimen/hud_padding_v"
                 android:orientation="vertical"
                 android:gravity="center"
                 android:background="@drawable/hud_box_bg">
@@ -266,14 +272,14 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="🏆"
-                    android:textSize="22sp"
+                    android:textSize="@dimen/hud_icon_size"
                     android:textColor="#ffffff" />
                 <TextView
                     android:id="@+id/highText"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="High 0"
-                    android:textSize="20sp"
+                    android:textSize="@dimen/hud_high_size"
                     android:textColor="#ffffff"
                     android:textStyle="bold"
                     android:layout_marginTop="4dp" />
@@ -292,8 +298,8 @@
         android:textStyle="bold"
         android:textSize="15sp"
         android:background="@drawable/btn_primary_bg"
-        android:layout_marginTop="12dp"
-        android:layout_marginBottom="12dp"
+        android:layout_marginTop="@dimen/play_btn_margin_v"
+        android:layout_marginBottom="@dimen/play_btn_margin_v"
         app:layout_constraintTop_toBottomOf="@id/hudGrid"
         app:layout_constraintBottom_toTopOf="@id/tapBtn"
         app:layout_constraintStart_toStartOf="parent"
@@ -302,15 +308,15 @@
     <!-- ── Tap button ─────────────────────────────────────────────────────── -->
     <Button
         android:id="@+id/tapBtn"
-        android:layout_width="150dp"
-        android:layout_height="150dp"
+        android:layout_width="@dimen/tap_btn_size"
+        android:layout_height="@dimen/tap_btn_size"
         android:text="⚡"
-        android:textSize="48sp"
+        android:textSize="@dimen/tap_btn_text"
         android:textColor="#ffffff"
         android:background="@drawable/tap_btn_bg"
         android:alpha="0.55"
         android:stateListAnimator="@null"
-        android:layout_marginBottom="60dp"
+        android:layout_marginBottom="@dimen/tap_btn_margin_bottom"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent" />

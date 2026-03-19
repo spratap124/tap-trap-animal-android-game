@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Default: very small screens (< 360dp wide) -->
+<resources>
+    <!-- HUD boxes -->
+    <dimen name="hud_icon_size">13sp</dimen>
+    <dimen name="hud_value_size">18sp</dimen>
+    <dimen name="hud_high_size">13sp</dimen>
+    <dimen name="hud_padding_v">2dp</dimen>
+
+    <!-- Tap button -->
+    <dimen name="tap_btn_size">110dp</dimen>
+    <dimen name="tap_btn_text">34sp</dimen>
+    <dimen name="tap_btn_margin_bottom">28dp</dimen>
+
+    <!-- Play/Stop button -->
+    <dimen name="play_btn_margin_v">6dp</dimen>
+</resources>

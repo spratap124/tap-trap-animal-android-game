@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Medium: 360dp+ wide (most 1080p Android phones) -->
+<resources>
+    <!-- HUD boxes -->
+    <dimen name="hud_icon_size">16sp</dimen>
+    <dimen name="hud_value_size">22sp</dimen>
+    <dimen name="hud_high_size">16sp</dimen>
+    <dimen name="hud_padding_v">4dp</dimen>
+
+    <!-- Tap button -->
+    <dimen name="tap_btn_size">130dp</dimen>
+    <dimen name="tap_btn_text">42sp</dimen>
+    <dimen name="tap_btn_margin_bottom">44dp</dimen>
+
+    <!-- Play/Stop button -->
+    <dimen name="play_btn_margin_v">8dp</dimen>
+</resources>

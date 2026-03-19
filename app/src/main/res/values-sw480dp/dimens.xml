@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Large: 480dp+ wide (large phones, phablets, tablets) -->
+<resources>
+    <!-- HUD boxes -->
+    <dimen name="hud_icon_size">22sp</dimen>
+    <dimen name="hud_value_size">28sp</dimen>
+    <dimen name="hud_high_size">20sp</dimen>
+    <dimen name="hud_padding_v">8dp</dimen>
+
+    <!-- Tap button -->
+    <dimen name="tap_btn_size">150dp</dimen>
+    <dimen name="tap_btn_text">48sp</dimen>
+    <dimen name="tap_btn_margin_bottom">60dp</dimen>
+
+    <!-- Play/Stop button -->
+    <dimen name="play_btn_margin_v">12dp</dimen>
+</resources>
