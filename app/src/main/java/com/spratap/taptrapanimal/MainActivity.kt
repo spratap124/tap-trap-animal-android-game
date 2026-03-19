@@ -557,15 +557,15 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
 
     private fun updatePowerUpBar() {
         val parts = mutableListOf<String>()
-        if (shieldCount > 0) parts.add("🛡️ ×$shieldCount")
+        if (shieldCount > 0) parts.add("🛡️×$shieldCount")
         if (bonusCoinsActive) {
             val secsLeft = ((bonusEndTime - System.currentTimeMillis()) / 1000L).coerceAtLeast(0L)
-            parts.add("🌟 ×2 COINS ${secsLeft}s")
+            parts.add("🌟×2\n${secsLeft}s")
         }
         if (parts.isEmpty()) {
             binding.powerUpBar.visibility = View.GONE
         } else {
-            binding.powerUpBar.text = parts.joinToString("   ")
+            binding.powerUpBar.text = parts.joinToString("\n")
             binding.powerUpBar.visibility = View.VISIBLE
         }
     }

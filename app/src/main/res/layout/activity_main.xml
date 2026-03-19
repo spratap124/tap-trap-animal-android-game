@@ -127,13 +127,36 @@
         android:paddingVertical="8dp"
         android:background="@drawable/animal_name_bg"
         android:layout_marginTop="8dp"
+        android:layout_marginStart="12dp"
         app:autoSizeTextType="uniform"
         app:autoSizeMinTextSize="10sp"
         app:autoSizeMaxTextSize="17sp"
         app:autoSizeStepGranularity="1sp"
-        app:layout_constraintWidth_percent="0.65"
+        app:layout_constraintWidth_percent="0.58"
         app:layout_constraintTop_toBottomOf="@id/levelBadgeRow"
         app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent" />
+
+    <!-- ── Power-up badge — same row as animal name, right side ──────── -->
+    <TextView
+        android:id="@+id/powerUpBar"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:visibility="gone"
+        android:text="🛡️×1"
+        android:textColor="#ffd700"
+        android:textStyle="bold"
+        android:textSize="11sp"
+        android:paddingHorizontal="8dp"
+        android:paddingVertical="6dp"
+        android:background="@drawable/badge_bg"
+        android:gravity="center"
+        android:maxLines="2"
+        android:layout_marginStart="6dp"
+        android:layout_marginEnd="12dp"
+        app:layout_constraintTop_toTopOf="@id/animalNameText"
+        app:layout_constraintBottom_toBottomOf="@id/animalNameText"
+        app:layout_constraintStart_toEndOf="@id/animalNameText"
         app:layout_constraintEnd_toEndOf="parent" />
 
     <!-- ── Game track ─────────────────────────────────────────────────────── -->
@@ -288,44 +311,6 @@
 
     </LinearLayout>
 
-    <!-- ── Power-up status bar (shield / double-coins) ─────────────────── -->
-    <!-- Floats centred in the dead-space between HUD and tapBtn.
-         visibility:gone has zero height so it never affects other views. -->
-    <TextView
-        android:id="@+id/powerUpBar"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:visibility="gone"
-        android:text="🛡️ ×1"
-        android:textColor="#ffd700"
-        android:textStyle="bold"
-        android:textSize="12sp"
-        android:paddingHorizontal="12dp"
-        android:paddingVertical="5dp"
-        android:background="@drawable/badge_bg"
-        android:gravity="center"
-        android:elevation="8dp"
-        app:layout_constraintTop_toBottomOf="@id/hudGrid"
-        app:layout_constraintBottom_toTopOf="@id/tapBtn"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintVertical_bias="0.5" />
-
-    <!-- ── Play / Pause button — sits just above the tapBtn, left side ─── -->
-    <Button
-        android:id="@+id/playPauseBtn"
-        android:layout_width="60dp"
-        android:layout_height="60dp"
-        android:text="▶"
-        android:textColor="#ffffff"
-        android:textSize="24sp"
-        android:background="@drawable/btn_primary_bg"
-        android:layout_marginStart="16dp"
-        android:layout_marginBottom="10dp"
-        android:stateListAnimator="@null"
-        app:layout_constraintBottom_toTopOf="@id/tapBtn"
-        app:layout_constraintStart_toStartOf="parent" />
-
     <!-- ── Tap button ─────────────────────────────────────────────────────── -->
     <Button
         android:id="@+id/tapBtn"
@@ -342,32 +327,47 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent" />
 
-    <!-- ── Shop button — above tapBtn, right side (mirrors playPauseBtn) ── -->
+    <!-- ── Play / Pause — left of tapBtn, vertically centred with it ──── -->
+    <Button
+        android:id="@+id/playPauseBtn"
+        android:layout_width="60dp"
+        android:layout_height="60dp"
+        android:text="▶"
+        android:textColor="#ffffff"
+        android:textSize="24sp"
+        android:background="@drawable/btn_primary_bg"
+        android:stateListAnimator="@null"
+        android:layout_marginEnd="12dp"
+        app:layout_constraintTop_toTopOf="@id/tapBtn"
+        app:layout_constraintBottom_toBottomOf="@id/tapBtn"
+        app:layout_constraintEnd_toStartOf="@id/tapBtn" />
+
+    <!-- ── Shop button — right of tapBtn, vertically centred ─────────── -->
     <TextView
         android:id="@+id/shopBtn"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="🛒"
-        android:textSize="32sp"
-        android:layout_marginEnd="20dp"
-        android:layout_marginBottom="10dp"
+        android:textSize="30sp"
+        android:layout_marginStart="12dp"
         android:clickable="true"
         android:focusable="true"
-        app:layout_constraintBottom_toTopOf="@id/tapBtn"
-        app:layout_constraintEnd_toEndOf="parent" />
+        app:layout_constraintTop_toTopOf="@id/tapBtn"
+        app:layout_constraintBottom_toBottomOf="@id/tapBtn"
+        app:layout_constraintStart_toEndOf="@id/tapBtn" />
 
-    <!-- ── Sound button — above shopBtn, right side ───────────────────── -->
+    <!-- ── Sound button — above tapBtn, right-aligned ────────────────── -->
     <TextView
         android:id="@+id/soundBtn"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="🔊"
         android:textSize="26sp"
-        android:layout_marginEnd="20dp"
+        android:layout_marginEnd="16dp"
         android:layout_marginBottom="8dp"
         android:clickable="true"
         android:focusable="true"
-        app:layout_constraintBottom_toTopOf="@id/shopBtn"
+        app:layout_constraintBottom_toTopOf="@id/tapBtn"
         app:layout_constraintEnd_toEndOf="parent" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>
