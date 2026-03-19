@@ -619,7 +619,8 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
         val recycler = dialog.findViewById<RecyclerView>(R.id.shopRecycler)
         recycler.layoutManager = GridLayoutManager(this, 2)
 
-        val adapter = ShopAdapter(animals, unlockedIndices, coins) { idx ->
+        lateinit var adapter: ShopAdapter
+        adapter = ShopAdapter(animals, unlockedIndices, coins) { idx ->
             if (coins >= animals[idx].cost) {
                 coins -= animals[idx].cost
                 unlockedIndices.add(idx)
