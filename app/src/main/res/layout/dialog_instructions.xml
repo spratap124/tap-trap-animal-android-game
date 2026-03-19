@@ -1,0 +1,129 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:background="@drawable/shop_panel_bg">
+
+    <!-- Header -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:padding="16dp"
+        android:background="@drawable/shop_header_bg">
+
+        <TextView
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="❓ How to Play"
+            android:textColor="#ffffff"
+            android:textSize="18sp"
+            android:textStyle="bold" />
+
+        <Button
+            android:id="@+id/instrCloseBtn"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:text="✕"
+            android:textSize="16sp"
+            android:textColor="#ffffff"
+            android:background="@drawable/close_btn_bg"
+            android:stateListAnimator="@null"
+            android:padding="0dp" />
+    </LinearLayout>
+
+    <!-- Scrollable instructions -->
+    <ScrollView
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:overScrollMode="never"
+        android:padding="16dp">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical">
+
+            <!-- Rule block helper: each section is a card-like LinearLayout -->
+
+            <LinearLayout style="@style/InstrCard">
+                <TextView style="@style/InstrIcon" android:text="⚡" />
+                <LinearLayout style="@style/InstrTextCol">
+                    <TextView style="@style/InstrTitle" android:text="Tap the Trap" />
+                    <TextView style="@style/InstrBody"
+                        android:text="Hit ⚡ when the animal overlaps the 🪤 trap. The closer the better!" />
+                </LinearLayout>
+            </LinearLayout>
+
+            <LinearLayout style="@style/InstrCard">
+                <TextView style="@style/InstrIcon" android:text="🍖" />
+                <LinearLayout style="@style/InstrTextCol">
+                    <TextView style="@style/InstrTitle" android:text="Avoid Food" />
+                    <TextView style="@style/InstrBody"
+                        android:text="Tapping on the food resets your combo multiplier — be careful!" />
+                </LinearLayout>
+            </LinearLayout>
+
+            <LinearLayout style="@style/InstrCard">
+                <TextView style="@style/InstrIcon" android:text="🔥" />
+                <LinearLayout style="@style/InstrTextCol">
+                    <TextView style="@style/InstrTitle" android:text="Build a Combo" />
+                    <TextView style="@style/InstrBody"
+                        android:text="Hit the trap rapidly to grow your x multiplier and score more points. Combo decays after 3.5 s of inactivity!" />
+                </LinearLayout>
+            </LinearLayout>
+
+            <LinearLayout style="@style/InstrCard">
+                <TextView style="@style/InstrIcon" android:text="🌟" />
+                <LinearLayout style="@style/InstrTextCol">
+                    <TextView style="@style/InstrTitle" android:text="Bonus Star" />
+                    <TextView style="@style/InstrBody"
+                        android:text="A ✨ star appears every 7 catches. Tap it for ×2 coins for 8 seconds! It vanishes in 3 s if missed." />
+                </LinearLayout>
+            </LinearLayout>
+
+            <LinearLayout style="@style/InstrCard">
+                <TextView style="@style/InstrIcon" android:text="🛡️" />
+                <LinearLayout style="@style/InstrTextCol">
+                    <TextView style="@style/InstrTitle" android:text="Shield" />
+                    <TextView style="@style/InstrBody"
+                        android:text="Earn a shield on a 5-hit streak, every 20 catches, or on level-up. It blocks one miss — saving your score and level." />
+                </LinearLayout>
+            </LinearLayout>
+
+            <LinearLayout style="@style/InstrCard">
+                <TextView style="@style/InstrIcon" android:text="🚀" />
+                <LinearLayout style="@style/InstrTextCol">
+                    <TextView style="@style/InstrTitle" android:text="Level Up" />
+                    <TextView style="@style/InstrBody"
+                        android:text="Every 10 catches you level up — the animal moves faster and the trap starts moving too. Earn bonus coins on each level!" />
+                </LinearLayout>
+            </LinearLayout>
+
+            <LinearLayout style="@style/InstrCard">
+                <TextView style="@style/InstrIcon" android:text="💀" />
+                <LinearLayout style="@style/InstrTextCol">
+                    <TextView style="@style/InstrTitle" android:text="Miss!" />
+                    <TextView style="@style/InstrBody"
+                        android:text="Tapping on empty track resets score, level, combo and shields back to zero. Don't miss!" />
+                </LinearLayout>
+            </LinearLayout>
+
+            <LinearLayout style="@style/InstrCard">
+                <TextView style="@style/InstrIcon" android:text="🛒" />
+                <LinearLayout style="@style/InstrTextCol">
+                    <TextView style="@style/InstrTitle" android:text="Animal Shop" />
+                    <TextView style="@style/InstrBody"
+                        android:text="Spend 🪙 coins to unlock new animals, each with their own food. More animals = more variety!" />
+                </LinearLayout>
+            </LinearLayout>
+
+        </LinearLayout>
+    </ScrollView>
+
+</LinearLayout>

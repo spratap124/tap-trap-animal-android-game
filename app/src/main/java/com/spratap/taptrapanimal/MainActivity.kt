@@ -256,6 +256,7 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
         }
         binding.tapBtn.setOnClickListener { handleTap() }
         binding.shopBtn.setOnClickListener { openShop() }
+        binding.instrBtn.setOnClickListener { openInstructions() }
         binding.soundBtn.setOnClickListener {
             soundOn = !soundOn
             savePrefs()
@@ -586,6 +587,20 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
     }
 
     // ── Shop ──────────────────────────────────────────────────────────────────
+
+    private fun openInstructions() {
+        val dialog = Dialog(this, R.style.ShopDialogTheme)
+        dialog.requestWindowFeature(Window.FEATURE_NO_TITLE)
+        dialog.setContentView(R.layout.dialog_instructions)
+        dialog.window?.setLayout(
+            (resources.displayMetrics.widthPixels * 0.92).toInt(),
+            (resources.displayMetrics.heightPixels * 0.80).toInt()
+        )
+        dialog.findViewById<android.view.View>(R.id.instrCloseBtn).setOnClickListener {
+            dialog.dismiss()
+        }
+        dialog.show()
+    }
 
     private fun openShop() {
         stopGame()

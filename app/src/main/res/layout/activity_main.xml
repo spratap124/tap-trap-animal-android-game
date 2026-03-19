@@ -118,7 +118,20 @@
             android:layout_height="wrap_content"
             android:text="🔊"
             android:textSize="20sp"
-            android:paddingStart="10dp"
+            android:paddingStart="8dp"
+            android:paddingVertical="8dp"
+            android:clickable="true"
+            android:focusable="true" />
+
+        <!-- Instructions -->
+        <TextView
+            android:id="@+id/instrBtn"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="❓"
+            android:textSize="20sp"
+            android:paddingStart="4dp"
+            android:paddingEnd="4dp"
             android:paddingVertical="8dp"
             android:clickable="true"
             android:focusable="true" />
