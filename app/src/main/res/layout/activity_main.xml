@@ -159,7 +159,7 @@
         android:layout_marginHorizontal="12dp"
         android:layout_marginTop="14dp"
         app:layout_constraintTop_toBottomOf="@id/gameView"
-        app:layout_constraintBottom_toTopOf="@id/powerUpBar"
+        app:layout_constraintBottom_toTopOf="@id/playPauseBtn"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintVertical_bias="0">
@@ -289,6 +289,8 @@
     </LinearLayout>
 
     <!-- ── Power-up status bar (shield / double-coins) ─────────────────── -->
+    <!-- Floats above the tap button — not part of the vertical chain so it
+         never pushes the play/pause button down on small screens. -->
     <TextView
         android:id="@+id/powerUpBar"
         android:layout_width="wrap_content"
@@ -302,10 +304,9 @@
         android:paddingVertical="5dp"
         android:background="@drawable/badge_bg"
         android:gravity="center"
-        android:layout_marginTop="4dp"
-        android:layout_marginBottom="4dp"
-        app:layout_constraintTop_toBottomOf="@id/hudGrid"
-        app:layout_constraintBottom_toTopOf="@id/playPauseBtn"
+        android:elevation="8dp"
+        android:layout_marginBottom="10dp"
+        app:layout_constraintBottom_toTopOf="@id/tapBtn"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent" />
 
@@ -321,7 +322,7 @@
         android:background="@drawable/btn_primary_bg"
         android:layout_marginTop="@dimen/play_btn_margin_v"
         android:layout_marginBottom="@dimen/play_btn_margin_v"
-        app:layout_constraintTop_toBottomOf="@id/powerUpBar"
+        app:layout_constraintTop_toBottomOf="@id/hudGrid"
         app:layout_constraintBottom_toTopOf="@id/tapBtn"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent" />
