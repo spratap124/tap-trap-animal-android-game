@@ -62,6 +62,20 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
     private var lastTrapHitAt = 0L
     private val COMBO_WINDOW_MS = 900L
     private val MILESTONE_INTERVAL = 50
+
+    // ── Power-up state ────────────────────────────────────────────────────────
+    private var shieldCount = 0
+    private var bonusCoinsActive = false
+    private var bonusEndTime = 0L
+    private var bonusCatchCount = 0
+    private val BONUS_SPAWN_EVERY = 7      // spawn 🌟 every N trap catches
+    private val BONUS_DURATION_MS = 8000L  // double-coins lasts 8 s
+    private val MAX_SHIELDS = 3
+    private val SHIELD_EVERY_N_CATCHES = 20
+
+    // ── Combo decay ───────────────────────────────────────────────────────────
+    private val COMBO_DECAY_DELAY_MS = 3500L
+    private val comboDecayRunnable: Runnable = Runnable { decayCombo() }
     private var unlockedIndices = mutableListOf(0, 1, 2, 3)
     private var currentAnimalIdx = 0
     private var soundOn = true
@@ -255,10 +269,16 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
     private fun stopGame() {
         binding.gameView.stopLoop()
         binding.gameView.resetSpeed()
+        binding.gameView.clearBonus()
         level = 1
         catches = 0
+        shieldCount = 0
+        bonusCoinsActive = false
+        bonusCatchCount = 0
+        mainHandler.removeCallbacks(comboDecayRunnable)
         setControlsState()
         updateLevelUI()
+        updatePowerUpBar()
     }
 
     private fun setControlsState() {
@@ -279,21 +299,28 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
         val now = System.currentTimeMillis()
         val result = binding.gameView.checkTap()
 
-        // After hitting the trap the player needs a moment to re-orient,
-        // especially at level-ups when the trap suddenly starts moving.
-        // Ignore a miss for 400 ms after the last successful trap hit so
-        // one unlucky re-tap doesn't wipe out the level and speed.
+        // Grace period after trap hit — avoids an immediate miss penalty
+        // right after a catch (especially at level-ups when trap starts moving).
         if (result == GameView.TapResult.MISS && now - lastTrapHitAt < 400L) return
 
         when (result) {
             GameView.TapResult.TRAP_HIT -> onTrapHit()
             GameView.TapResult.FOOD_HIT -> onFoodHit()
-            GameView.TapResult.MISS -> onMiss()
+            GameView.TapResult.BONUS_HIT -> onBonusHit()
+            GameView.TapResult.MISS -> {
+                if (shieldCount > 0) {
+                    shieldCount--
+                    updatePowerUpBar()
+                    showToast("🛡️ Shield blocked the miss!")
+                    vibrateStrong()
+                    binding.gameView.sparkle(big = true)
+                } else {
+                    onMiss()
+                }
+            }
         }
 
-        if (score > high) {
-            high = score
-        }
+        if (score > high) high = score
         updateUI()
         savePrefs()
     }
@@ -308,7 +335,27 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
         lastTrapHitAt = now
 
         val comboCoins = if (trapStreak >= 2) minOf(10, trapStreak - 1) else 0
-        coins += comboCoins
+        coins += if (bonusCoinsActive) (comboCoins + 1) * 2 else comboCoins
+
+        // Award shield on first time reaching a 5-streak
+        if (trapStreak == 5 && shieldCount < MAX_SHIELDS) {
+            shieldCount++
+            showToast("🛡️ Shield earned for 5-streak!")
+            updatePowerUpBar()
+        }
+
+        // Award shield every SHIELD_EVERY_N_CATCHES catches
+        if (catches % SHIELD_EVERY_N_CATCHES == 0 && shieldCount < MAX_SHIELDS) {
+            shieldCount++
+            showToast("🛡️ Shield earned!")
+            updatePowerUpBar()
+        }
+
+        // Spawn bonus star periodically
+        bonusCatchCount++
+        if (bonusCatchCount % BONUS_SPAWN_EVERY == 0 && binding.gameView.bonusX < 0f) {
+            binding.gameView.spawnBonus()
+        }
 
         playSound(soundTrap)
 
@@ -319,9 +366,13 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
         }
 
         vibrateStrong()
-        binding.gameView.sparkle()
+        binding.gameView.sparkle(big = combo > 5)
 
         if (trapStreak >= 2) showComboPop()
+
+        // Reset combo decay countdown after every successful hit
+        mainHandler.removeCallbacks(comboDecayRunnable)
+        mainHandler.postDelayed(comboDecayRunnable, COMBO_DECAY_DELAY_MS)
 
         currentAnimalIdx = randomAnimal(currentAnimalIdx)
         announceAnimal(animals[currentAnimalIdx].name)
@@ -330,7 +381,7 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
     }
 
     private fun onFoodHit() {
-        coins += 2
+        coins += if (bonusCoinsActive) 4 else 2
         combo = 1
         trapStreak = 0
         lastTrapHitAt = 0
@@ -347,11 +398,17 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
         lastMilestone = 0
         catches = 0
         level = 1
+        shieldCount = 0
+        bonusCoinsActive = false
+        bonusCatchCount = 0
+        binding.gameView.clearBonus()
+        mainHandler.removeCallbacks(comboDecayRunnable)
         binding.gameView.applyLevel(level)
         playSound(soundGameOver)
         flashGameOver()
         binding.gameView.centerTrap()
         updateLevelUI()
+        updatePowerUpBar()
     }
 
     // ── Level system ──────────────────────────────────────────────────────────
@@ -365,12 +422,16 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
             coins += 25 * level
             playSound(soundMilestone)
             vibrateStrong()
-            binding.gameView.sparkle()
-            binding.gameView.sparkle(
-                binding.gameView.width * 0.25f,
-                binding.gameView.height / 2f
-            )
-            showToast("LEVEL UP!  +${25 * level} 🪙")
+            // Three big sparkle bursts across the track
+            binding.gameView.sparkle(big = true)
+            binding.gameView.sparkle(binding.gameView.width * 0.25f, binding.gameView.height / 2f, big = true)
+            binding.gameView.sparkle(binding.gameView.width * 0.75f, binding.gameView.height / 2f, big = true)
+            // Award a shield for reaching a new level
+            if (shieldCount < MAX_SHIELDS) {
+                shieldCount++
+                updatePowerUpBar()
+            }
+            showToast("🚀 LEVEL UP!  +${25 * level} 🪙")
             applyRandomTheme()
             updateUI()
             updateLevelUI()
@@ -400,6 +461,7 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
         binding.comboText.text = "x$combo"
         binding.coinsText.text = coins.toString()
         binding.highText.text = "High $high"
+        updatePowerUpBar()
     }
 
     private fun updateLevelUI() {
@@ -460,6 +522,54 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
         mainHandler.postDelayed({ root.setBackgroundColor(0xFF111111.toInt()) }, 300)
         mainHandler.postDelayed({ root.setBackgroundColor(0xFF5A0000.toInt()) }, 500)
         mainHandler.postDelayed({ root.setBackgroundColor(0xFF111111.toInt()) }, 700)
+    }
+
+    // ── Bonus star hit ────────────────────────────────────────────────────────
+
+    private fun onBonusHit() {
+        bonusCoinsActive = true
+        bonusEndTime = System.currentTimeMillis() + BONUS_DURATION_MS
+        binding.gameView.clearBonus()
+        coins += 10
+        playSound(soundMilestone)
+        vibrateStrong()
+        binding.gameView.sparkle(big = true)
+        binding.gameView.sparkle(binding.gameView.width * 0.8f, binding.gameView.height / 2f, big = true)
+        showToast("🌟 ×2 COINS for 8s! +10 🪙")
+        updatePowerUpBar()
+        mainHandler.postDelayed({
+            if (bonusCoinsActive) {
+                bonusCoinsActive = false
+                updatePowerUpBar()
+            }
+        }, BONUS_DURATION_MS)
+    }
+
+    // ── Power-up bar ─────────────────────────────────────────────────────────
+
+    private fun updatePowerUpBar() {
+        val parts = mutableListOf<String>()
+        if (shieldCount > 0) parts.add("🛡️ ×$shieldCount")
+        if (bonusCoinsActive) {
+            val secsLeft = ((bonusEndTime - System.currentTimeMillis()) / 1000L).coerceAtLeast(0L)
+            parts.add("🌟 ×2 COINS ${secsLeft}s")
+        }
+        if (parts.isEmpty()) {
+            binding.powerUpBar.visibility = View.GONE
+        } else {
+            binding.powerUpBar.text = parts.joinToString("   ")
+            binding.powerUpBar.visibility = View.VISIBLE
+        }
+    }
+
+    // ── Combo decay ───────────────────────────────────────────────────────────
+
+    private fun decayCombo() {
+        if (binding.gameView.gameRunning && combo > 1) {
+            combo--
+            updateUI()
+            if (combo > 1) mainHandler.postDelayed(comboDecayRunnable, COMBO_DECAY_DELAY_MS)
+        }
     }
 
     private fun applyRandomTheme() {

@@ -2,6 +2,7 @@ package com.spratap.taptrapanimal
 
 import android.content.Context
 import android.graphics.Canvas
+import android.graphics.Color
 import android.graphics.LinearGradient
 import android.graphics.Paint
 import android.graphics.Path
@@ -26,7 +27,7 @@ class GameView @JvmOverloads constructor(
         const val CATCHES_PER_LEVEL = 10
     }
 
-    enum class TapResult { TRAP_HIT, FOOD_HIT, MISS }
+    enum class TapResult { TRAP_HIT, FOOD_HIT, BONUS_HIT, MISS }
 
     data class Particle(
         var x: Float,
@@ -49,6 +50,7 @@ class GameView @JvmOverloads constructor(
     var speed = INITIAL_SPEED
     var trapMoveSpeed = 0f
     var foodX = 0f
+    var bonusX = -1f   // -1 = no bonus on track
     var gameRunning = false
 
     private val density get() = context.resources.displayMetrics.density
@@ -72,6 +74,16 @@ class GameView @JvmOverloads constructor(
     private val bgPaint = Paint()
     private val trackRectF = RectF()
     private val clipPath = Path()
+
+    // Bonus star paint (drawn slightly larger so it stands out)
+    private val bonusPaint = TextPaint(Paint.ANTI_ALIAS_FLAG).apply {
+        textAlign = Paint.Align.LEFT
+    }
+
+    // Proximity danger glow painted as a stroke border outside the track
+    private val glowPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+        style = Paint.Style.STROKE
+    }
 
     private var bgColors = intArrayOf(0xFF3A3A3A.toInt(), 0xFF2C2C2C.toInt())
 
@@ -100,6 +112,8 @@ class GameView @JvmOverloads constructor(
         clipPath.addRoundRect(trackRectF, radius, radius, Path.Direction.CW)
         animalPaint.textSize = h * 0.38f
         foodPaint.textSize = h * 0.30f
+        bonusPaint.textSize = h * 0.42f
+        glowPaint.strokeWidth = 5f * context.resources.displayMetrics.density
         if (foodX == 0f) spawnFood()
         if (trapPos == 0f) centerTrap()
     }
@@ -152,6 +166,17 @@ class GameView @JvmOverloads constructor(
 
     override fun onDraw(canvas: Canvas) {
         val radius = height * 0.28f
+
+        // ── Proximity danger glow (drawn BEFORE clip so it glows as a border) ──
+        val distToTrap = abs(pos - trapPos)
+        val glowThreshPx = 65f * density
+        if (distToTrap < glowThreshPx && gameRunning) {
+            val intensity = (1f - distToTrap / glowThreshPx).coerceIn(0f, 1f)
+            glowPaint.color = Color.argb((intensity * 220).toInt(), 255, 55, 55)
+            val sw = glowPaint.strokeWidth / 2f
+            canvas.drawRoundRect(sw, sw, width - sw, height - sw, radius, radius, glowPaint)
+        }
+
         canvas.save()
         canvas.clipPath(clipPath)
 
@@ -159,6 +184,11 @@ class GameView @JvmOverloads constructor(
         canvas.drawRoundRect(trackRectF, radius, radius, bgPaint)
 
         val cy = height * 0.66f
+
+        // Bonus star (drawn below other items so animal appears on top)
+        if (bonusX >= 0f) {
+            canvas.drawText("🌟", bonusX, cy, bonusPaint)
+        }
 
         // Food
         canvas.drawText(foodEmoji, foodX, cy, foodPaint)
@@ -189,6 +219,7 @@ class GameView @JvmOverloads constructor(
         val trapPx = trapThresholdDp * density
         val foodPx = foodThresholdDp * density
         return when {
+            bonusX >= 0f && abs(pos - bonusX) < foodPx -> TapResult.BONUS_HIT
             abs(pos - trapPos) < trapPx -> TapResult.TRAP_HIT
             abs(pos - foodX) < foodPx -> TapResult.FOOD_HIT
             else -> TapResult.MISS
@@ -213,17 +244,37 @@ class GameView @JvmOverloads constructor(
         invalidate()
     }
 
-    fun sparkle(x: Float = width / 2f, y: Float = height / 2f) {
-        repeat(12) {
+    fun sparkle(x: Float = width / 2f, y: Float = height / 2f, big: Boolean = false) {
+        val count = if (big) 22 else 12
+        val speed = if (big) 7f else 5f
+        val life = if (big) 35 else 25
+        repeat(count) {
             particles.add(
                 Particle(
                     x, y,
-                    (Random.nextFloat() - 0.5f) * 5f * density,
-                    (Random.nextFloat() - 0.5f) * 5f * density,
-                    25
+                    (Random.nextFloat() - 0.5f) * speed * density,
+                    (Random.nextFloat() - 0.5f) * speed * density,
+                    life
                 )
             )
         }
+    }
+
+    fun spawnBonus() {
+        val max = maxPos()
+        if (max <= 0f) return
+        var x: Float
+        val minDistPx = 80f * density
+        do {
+            x = Random.nextFloat() * max
+        } while (abs(x - trapPos) < minDistPx || abs(x - foodX) < minDistPx)
+        bonusX = x
+        invalidate()
+    }
+
+    fun clearBonus() {
+        bonusX = -1f
+        invalidate()
     }
 
     fun setTrackBackground(vararg colors: Int) {
