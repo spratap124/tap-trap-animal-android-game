@@ -255,7 +255,10 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
     private fun stopGame() {
         binding.gameView.stopLoop()
         binding.gameView.resetSpeed()
+        level = 1
+        catches = 0
         setControlsState()
+        updateLevelUI()
     }
 
     private fun setControlsState() {
@@ -273,7 +276,16 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
     private fun handleTap() {
         if (!binding.gameView.gameRunning) return
 
-        when (binding.gameView.checkTap()) {
+        val now = System.currentTimeMillis()
+        val result = binding.gameView.checkTap()
+
+        // After hitting the trap the player needs a moment to re-orient,
+        // especially at level-ups when the trap suddenly starts moving.
+        // Ignore a miss for 400 ms after the last successful trap hit so
+        // one unlucky re-tap doesn't wipe out the level and speed.
+        if (result == GameView.TapResult.MISS && now - lastTrapHitAt < 400L) return
+
+        when (result) {
             GameView.TapResult.TRAP_HIT -> onTrapHit()
             GameView.TapResult.FOOD_HIT -> onFoodHit()
             GameView.TapResult.MISS -> onMiss()
