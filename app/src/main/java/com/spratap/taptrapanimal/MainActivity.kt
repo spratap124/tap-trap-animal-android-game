@@ -82,6 +82,9 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
         binding.gameView.clearBonus()
     }
     private var unlockedIndices = mutableListOf(0, 1, 2, 3)
+    // index → expiry epoch millis; entries expire automatically
+    private var tempUnlockedAnimals = mutableMapOf<Int, Long>()
+    private val TEMP_UNLOCK_DURATION_MS = 2 * 60 * 60 * 1000L  // 2 hours
     private var currentAnimalIdx = 0
     private var soundOn = true
 
@@ -165,15 +168,32 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
             .mapNotNull { it.trim().toIntOrNull() }
             .toMutableList()
             .ifEmpty { mutableListOf(0, 1, 2, 3) }
+        // Load temp unlocks and immediately drop any that have expired
+        val now = System.currentTimeMillis()
+        val savedTemp = prefs.getString("tempUnlocked", "") ?: ""
+        tempUnlockedAnimals = savedTemp.split(",")
+            .mapNotNull { entry ->
+                val parts = entry.split(":")
+                if (parts.size == 2) {
+                    val idx    = parts[0].toIntOrNull() ?: return@mapNotNull null
+                    val expiry = parts[1].toLongOrNull() ?: return@mapNotNull null
+                    if (expiry > now) idx to expiry else null
+                } else null
+            }
+            .toMap().toMutableMap()
     }
 
     private fun savePrefs() {
+        val tempStr = tempUnlockedAnimals.entries
+            .filter { it.value > System.currentTimeMillis() }
+            .joinToString(",") { "${it.key}:${it.value}" }
         prefs.edit()
             .putInt("coins", coins)
             .putInt("high", high)
             .putInt("bestLevel", bestLevel)
             .putBoolean("soundOn", soundOn)
             .putString("unlocked", unlockedIndices.joinToString(","))
+            .putString("tempUnlocked", tempStr)
             .apply()
     }
 
@@ -596,12 +616,41 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
         }
     }
 
+    // ── Temp-unlock helpers ────────────────────────────────────────────────────
+
+    private fun isTempUnlocked(idx: Int): Boolean {
+        val expiry = tempUnlockedAnimals[idx] ?: return false
+        return System.currentTimeMillis() < expiry
+    }
+
+    /** Minutes remaining for a temp-unlocked animal (0 if expired/not temp). */
+    private fun tempMinutesLeft(idx: Int): Long {
+        val expiry = tempUnlockedAnimals[idx] ?: return 0L
+        return ((expiry - System.currentTimeMillis()) / 60_000L).coerceAtLeast(0L)
+    }
+
+    /** Map of idx → minutes remaining, for active temp unlocks only. */
+    private fun buildTempUnlockMap(): Map<Int, Long> {
+        val now = System.currentTimeMillis()
+        return tempUnlockedAnimals
+            .filter { it.value > now }
+            .mapValues { ((it.value - now) / 60_000L).coerceAtLeast(1L) }
+    }
+
+    /** All indices available for gameplay (permanent + active temp unlocks). */
+    private fun availableAnimals(): List<Int> {
+        val now = System.currentTimeMillis()
+        val temp = tempUnlockedAnimals.filter { it.value > now }.keys
+        return (unlockedIndices + temp).distinct()
+    }
+
     // ── Animal randomizer ─────────────────────────────────────────────────────
 
     private fun randomAnimal(exceptIdx: Int = -1): Int {
-        val pool = if (exceptIdx != -1 && unlockedIndices.size > 1)
-            unlockedIndices.filter { it != exceptIdx }.ifEmpty { unlockedIndices }
-        else unlockedIndices
+        val available = availableAnimals()
+        val pool = if (exceptIdx != -1 && available.size > 1)
+            available.filter { it != exceptIdx }.ifEmpty { available }
+        else available
         val idx = pool.random()
         val a = animals[idx]
         binding.gameView.animalEmoji = a.emoji
@@ -786,15 +835,14 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
             } else {
                 adManager.showRewardedAd(
                     onRewarded = {
-                        if (!unlockedIndices.contains(idx)) {
-                            unlockedIndices.add(idx)
-                            savePrefs()
-                            updateUI()
-                            shopCoinsText.text = "$coins 🪙"
-                            adapter.updateCoins(coins)
-                            adapter.updateAdReady(adManager.isRewardedReady)
-                            showToast("🎉 ${animals[idx].name} unlocked!")
-                        }
+                        // Temp unlock for 2 hours — not permanent
+                        val expiry = System.currentTimeMillis() + TEMP_UNLOCK_DURATION_MS
+                        tempUnlockedAnimals[idx] = expiry
+                        savePrefs()
+                        adapter.updateTempUnlocks(buildTempUnlockMap())
+                        adapter.updateAdReady(adManager.isRewardedReady)
+                        val hrs = TEMP_UNLOCK_DURATION_MS / 3_600_000L
+                        showToast("⏱ ${animals[idx].name} unlocked for ${hrs}h!")
                     },
                     onDismissed = {
                         adapter.updateAdReady(adManager.isRewardedReady)
@@ -806,6 +854,7 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
         adapter = ShopAdapter(
             animals, unlockedIndices, coins,
             adManager.isRewardedReady,
+            buildTempUnlockMap(),
             onBuy, onWatchAd
         )
         recycler.adapter = adapter
