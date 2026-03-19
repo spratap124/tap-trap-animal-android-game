@@ -110,6 +110,18 @@
             android:background="@drawable/badge_bg"
             android:paddingHorizontal="12dp"
             android:paddingVertical="8dp" />
+
+        <!-- Sound toggle lives in the top bar — it's a global setting -->
+        <TextView
+            android:id="@+id/soundBtn"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="🔊"
+            android:textSize="20sp"
+            android:paddingStart="10dp"
+            android:paddingVertical="8dp"
+            android:clickable="true"
+            android:focusable="true" />
     </LinearLayout>
 
     <!-- ── Animal name pill ──────────────────────────────────────────────── -->
@@ -356,18 +368,5 @@
         app:layout_constraintBottom_toBottomOf="@id/tapBtn"
         app:layout_constraintStart_toEndOf="@id/tapBtn" />
 
-    <!-- ── Sound button — above tapBtn, right-aligned ────────────────── -->
-    <TextView
-        android:id="@+id/soundBtn"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="🔊"
-        android:textSize="26sp"
-        android:layout_marginEnd="16dp"
-        android:layout_marginBottom="8dp"
-        android:clickable="true"
-        android:focusable="true"
-        app:layout_constraintBottom_toTopOf="@id/tapBtn"
-        app:layout_constraintEnd_toEndOf="parent" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>
