@@ -626,7 +626,9 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
                 savePrefs()
                 updateUI()
                 shopCoinsText.text = "$coins 🪙"
-                recycler.adapter?.notifyDataSetChanged()
+                // updateCoins syncs the new balance into the adapter so it
+                // re-evaluates isEnabled for every remaining BUY button
+                adapter.updateCoins(coins)
             }
         }
         recycler.adapter = adapter
