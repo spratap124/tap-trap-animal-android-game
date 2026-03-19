@@ -352,7 +352,7 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent" />
 
-    <!-- ── Play / Pause — left of tapBtn, vertically centred with it ──── -->
+    <!-- ── Play / Pause — pinned to left edge ───────────────────────── -->
     <Button
         android:id="@+id/playPauseBtn"
         android:layout_width="60dp"
@@ -362,24 +362,24 @@
         android:textSize="24sp"
         android:background="@drawable/btn_primary_bg"
         android:stateListAnimator="@null"
-        android:layout_marginEnd="24dp"
+        android:layout_marginStart="24dp"
         app:layout_constraintTop_toTopOf="@id/tapBtn"
         app:layout_constraintBottom_toBottomOf="@id/tapBtn"
-        app:layout_constraintEnd_toStartOf="@id/tapBtn" />
+        app:layout_constraintStart_toStartOf="parent" />
 
-    <!-- ── Shop button — right of tapBtn, vertically centred ─────────── -->
+    <!-- ── Shop button — pinned to right edge ───────────────────────── -->
     <TextView
         android:id="@+id/shopBtn"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="🛒"
         android:textSize="30sp"
-        android:layout_marginStart="24dp"
+        android:layout_marginEnd="24dp"
         android:clickable="true"
         android:focusable="true"
         app:layout_constraintTop_toTopOf="@id/tapBtn"
         app:layout_constraintBottom_toBottomOf="@id/tapBtn"
-        app:layout_constraintStart_toEndOf="@id/tapBtn" />
+        app:layout_constraintEnd_toEndOf="parent" />
 
 
 </androidx.constraintlayout.widget.ConstraintLayout>
