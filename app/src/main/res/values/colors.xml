@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="bgDark">#111111</color>
+    <color name="bgDarkFlash">#5A0000</color>
+    <color name="btnPrimary">#2ed573</color>
+    <color name="btnDanger">#ff4757</color>
+    <color name="gold">#ffd700</color>
+    <color name="textWhite">#ffffff</color>
+    <color name="textMuted">#aaaaaa</color>
+    <color name="progressGreen">#2ed573</color>
+</resources>

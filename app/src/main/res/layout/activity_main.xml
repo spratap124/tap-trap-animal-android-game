@@ -1,0 +1,360 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/mainRoot"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="#111111"
+    android:fitsSystemWindows="true">
+
+    <!-- ── Toast overlay ─────────────────────────────────────────────────── -->
+    <TextView
+        android:id="@+id/toastText"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:visibility="gone"
+        android:padding="12dp"
+        android:background="@drawable/toast_bg"
+        android:textColor="#ffffff"
+        android:textStyle="bold"
+        android:textSize="15sp"
+        android:elevation="20dp"
+        android:layout_marginTop="16dp"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent" />
+
+    <!-- ── Combo popup ────────────────────────────────────────────────────── -->
+    <LinearLayout
+        android:id="@+id/comboPop"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:gravity="center"
+        android:padding="20dp"
+        android:background="@drawable/combo_pop_bg"
+        android:visibility="gone"
+        android:elevation="21dp"
+        android:minWidth="180dp"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent">
+
+        <TextView
+            android:id="@+id/comboPopBig"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="COMBO: 2"
+            android:textSize="26sp"
+            android:textStyle="bold"
+            android:textColor="#ffd700"
+            android:letterSpacing="0.1" />
+
+        <TextView
+            android:id="@+id/comboPopSmall"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="2 quick hits in a row"
+            android:textSize="13sp"
+            android:textColor="#eeeeee"
+            android:layout_marginTop="6dp" />
+    </LinearLayout>
+
+    <!-- ── Level badge row ───────────────────────────────────────────────── -->
+    <LinearLayout
+        android:id="@+id/levelBadgeRow"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:layout_marginTop="12dp"
+        android:layout_marginHorizontal="16dp"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent">
+
+        <TextView
+            android:id="@+id/levelText"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="🏁 Level 1"
+            android:textColor="#ffffff"
+            android:textStyle="bold"
+            android:textSize="13sp"
+            android:background="@drawable/badge_bg"
+            android:paddingHorizontal="12dp"
+            android:paddingVertical="8dp" />
+
+        <ProgressBar
+            android:id="@+id/levelProgressBar"
+            style="@style/Widget.AppCompat.ProgressBar.Horizontal"
+            android:layout_width="0dp"
+            android:layout_height="10dp"
+            android:layout_weight="1"
+            android:layout_marginHorizontal="8dp"
+            android:max="100"
+            android:progress="0"
+            android:progressTint="#2ed573"
+            android:progressBackgroundTint="#333333" />
+
+        <TextView
+            android:id="@+id/bestLevelText"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="🏆 Best 1"
+            android:textColor="#ffffff"
+            android:textStyle="bold"
+            android:textSize="13sp"
+            android:background="@drawable/badge_bg"
+            android:paddingHorizontal="12dp"
+            android:paddingVertical="8dp" />
+    </LinearLayout>
+
+    <!-- ── Animal name pill ──────────────────────────────────────────────── -->
+    <TextView
+        android:id="@+id/animalNameText"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="🐭  RAT"
+        android:textColor="#ffffff"
+        android:textSize="17sp"
+        android:textStyle="bold"
+        android:letterSpacing="0.1"
+        android:paddingHorizontal="24dp"
+        android:paddingVertical="11dp"
+        android:background="@drawable/animal_name_bg"
+        android:layout_marginTop="10dp"
+        app:layout_constraintTop_toBottomOf="@id/levelBadgeRow"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent" />
+
+    <!-- ── Game track ─────────────────────────────────────────────────────── -->
+    <com.spratap.taptrapanimal.GameView
+        android:id="@+id/gameView"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:layout_marginHorizontal="16dp"
+        android:layout_marginTop="10dp"
+        app:layout_constraintHeight_min="80dp"
+        app:layout_constraintHeight_max="110dp"
+        app:layout_constraintTop_toBottomOf="@id/animalNameText"
+        app:layout_constraintBottom_toTopOf="@id/hudGrid"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent" />
+
+    <!-- ── HUD 2×2 grid ──────────────────────────────────────────────────── -->
+    <LinearLayout
+        android:id="@+id/hudGrid"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:layout_marginHorizontal="12dp"
+        android:layout_marginTop="14dp"
+        app:layout_constraintTop_toBottomOf="@id/gameView"
+        app:layout_constraintBottom_toTopOf="@id/playPauseBtn"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintVertical_bias="0">
+
+        <!-- Row 1 -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal">
+
+            <!-- Score -->
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:layout_margin="6dp"
+                android:paddingVertical="8dp"
+                android:orientation="vertical"
+                android:gravity="center"
+                android:background="@drawable/hud_box_bg">
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="⭐"
+                    android:textSize="22sp"
+                    android:textColor="#ffffff" />
+                <TextView
+                    android:id="@+id/scoreText"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="0"
+                    android:textSize="28sp"
+                    android:textColor="#ffffff"
+                    android:textStyle="bold"
+                    android:layout_marginTop="4dp" />
+            </LinearLayout>
+
+            <!-- Combo -->
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:layout_margin="6dp"
+                android:paddingVertical="8dp"
+                android:orientation="vertical"
+                android:gravity="center"
+                android:background="@drawable/hud_box_bg">
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="🔥"
+                    android:textSize="22sp"
+                    android:textColor="#ffffff" />
+                <TextView
+                    android:id="@+id/comboText"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="x1"
+                    android:textSize="28sp"
+                    android:textColor="#ffffff"
+                    android:textStyle="bold"
+                    android:layout_marginTop="4dp" />
+            </LinearLayout>
+        </LinearLayout>
+
+        <!-- Row 2 -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal">
+
+            <!-- Coins -->
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:layout_margin="6dp"
+                android:paddingVertical="8dp"
+                android:orientation="vertical"
+                android:gravity="center"
+                android:background="@drawable/hud_box_bg">
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="🪙"
+                    android:textSize="22sp"
+                    android:textColor="#ffffff" />
+                <TextView
+                    android:id="@+id/coinsText"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="0"
+                    android:textSize="28sp"
+                    android:textColor="#ffffff"
+                    android:textStyle="bold"
+                    android:layout_marginTop="4dp" />
+            </LinearLayout>
+
+            <!-- High score -->
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:layout_margin="6dp"
+                android:paddingVertical="8dp"
+                android:orientation="vertical"
+                android:gravity="center"
+                android:background="@drawable/hud_box_bg">
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="🏆"
+                    android:textSize="22sp"
+                    android:textColor="#ffffff" />
+                <TextView
+                    android:id="@+id/highText"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="High 0"
+                    android:textSize="20sp"
+                    android:textColor="#ffffff"
+                    android:textStyle="bold"
+                    android:layout_marginTop="4dp" />
+            </LinearLayout>
+        </LinearLayout>
+
+    </LinearLayout>
+
+    <!-- ── Start / Stop button ───────────────────────────────────────────── -->
+    <Button
+        android:id="@+id/playPauseBtn"
+        android:layout_width="120dp"
+        android:layout_height="wrap_content"
+        android:text="Start"
+        android:textColor="#ffffff"
+        android:textStyle="bold"
+        android:textSize="15sp"
+        android:background="@drawable/btn_primary_bg"
+        android:layout_marginTop="12dp"
+        android:layout_marginBottom="12dp"
+        app:layout_constraintTop_toBottomOf="@id/hudGrid"
+        app:layout_constraintBottom_toTopOf="@id/tapBtn"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent" />
+
+    <!-- ── Tap button ─────────────────────────────────────────────────────── -->
+    <Button
+        android:id="@+id/tapBtn"
+        android:layout_width="150dp"
+        android:layout_height="150dp"
+        android:text="⚡"
+        android:textSize="48sp"
+        android:textColor="#ffffff"
+        android:background="@drawable/tap_btn_bg"
+        android:alpha="0.55"
+        android:stateListAnimator="@null"
+        android:layout_marginBottom="60dp"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent" />
+
+    <!-- ── Shop button ────────────────────────────────────────────────────── -->
+    <TextView
+        android:id="@+id/shopBtn"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="🛒"
+        android:textSize="28sp"
+        android:layout_marginEnd="20dp"
+        android:layout_marginBottom="16dp"
+        android:clickable="true"
+        android:focusable="true"
+        app:layout_constraintBottom_toBottomOf="@id/tapBtn"
+        app:layout_constraintEnd_toEndOf="parent" />
+
+    <!-- ── Theme button ───────────────────────────────────────────────────── -->
+    <TextView
+        android:id="@+id/themeBtn"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="🎨"
+        android:textSize="28sp"
+        android:layout_marginStart="20dp"
+        android:layout_marginBottom="16dp"
+        android:clickable="true"
+        android:focusable="true"
+        app:layout_constraintBottom_toBottomOf="@id/tapBtn"
+        app:layout_constraintStart_toStartOf="parent" />
+
+    <!-- ── Sound button ───────────────────────────────────────────────────── -->
+    <TextView
+        android:id="@+id/soundBtn"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="🔊"
+        android:textSize="28sp"
+        android:layout_marginEnd="20dp"
+        android:layout_marginBottom="8dp"
+        android:clickable="true"
+        android:focusable="true"
+        app:layout_constraintBottom_toTopOf="@id/tapBtn"
+        app:layout_constraintEnd_toEndOf="parent" />
+
+</androidx.constraintlayout.widget.ConstraintLayout>
