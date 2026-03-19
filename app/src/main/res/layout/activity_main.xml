@@ -159,7 +159,7 @@
         android:layout_marginHorizontal="12dp"
         android:layout_marginTop="14dp"
         app:layout_constraintTop_toBottomOf="@id/gameView"
-        app:layout_constraintBottom_toTopOf="@id/playPauseBtn"
+        app:layout_constraintBottom_toTopOf="@id/tapBtn"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintVertical_bias="0">
@@ -310,22 +310,22 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent" />
 
-    <!-- ── Start / Stop button ───────────────────────────────────────────── -->
+    <!-- ── Start / Stop button (bottom-left, mirrors shopBtn) ──────────── -->
     <Button
         android:id="@+id/playPauseBtn"
-        android:layout_width="120dp"
+        android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="Start"
         android:textColor="#ffffff"
         android:textStyle="bold"
-        android:textSize="15sp"
+        android:textSize="14sp"
+        android:paddingHorizontal="18dp"
+        android:paddingVertical="12dp"
         android:background="@drawable/btn_primary_bg"
-        android:layout_marginTop="@dimen/play_btn_margin_v"
-        android:layout_marginBottom="@dimen/play_btn_margin_v"
-        app:layout_constraintTop_toBottomOf="@id/hudGrid"
-        app:layout_constraintBottom_toTopOf="@id/tapBtn"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent" />
+        android:layout_marginStart="16dp"
+        android:layout_marginBottom="16dp"
+        app:layout_constraintBottom_toBottomOf="@id/tapBtn"
+        app:layout_constraintStart_toStartOf="parent" />
 
     <!-- ── Tap button ─────────────────────────────────────────────────────── -->
     <Button
@@ -356,20 +356,6 @@
         android:focusable="true"
         app:layout_constraintBottom_toBottomOf="@id/tapBtn"
         app:layout_constraintEnd_toEndOf="parent" />
-
-    <!-- ── Theme button ───────────────────────────────────────────────────── -->
-    <TextView
-        android:id="@+id/themeBtn"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="🎨"
-        android:textSize="28sp"
-        android:layout_marginStart="20dp"
-        android:layout_marginBottom="16dp"
-        android:clickable="true"
-        android:focusable="true"
-        app:layout_constraintBottom_toBottomOf="@id/tapBtn"
-        app:layout_constraintStart_toStartOf="parent" />
 
     <!-- ── Sound button ───────────────────────────────────────────────────── -->
     <TextView

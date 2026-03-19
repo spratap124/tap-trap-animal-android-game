@@ -256,7 +256,6 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
         }
         binding.tapBtn.setOnClickListener { handleTap() }
         binding.shopBtn.setOnClickListener { openShop() }
-        binding.themeBtn.setOnClickListener { applyRandomTheme() }
         binding.soundBtn.setOnClickListener {
             soundOn = !soundOn
             savePrefs()
