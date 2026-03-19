@@ -70,12 +70,16 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
     private var bonusCatchCount = 0
     private val BONUS_SPAWN_EVERY = 7      // spawn 🌟 every N trap catches
     private val BONUS_DURATION_MS = 8000L  // double-coins lasts 8 s
+    private val BONUS_EXPIRE_MS   = 3000L  // star disappears if not collected in 3 s
     private val MAX_SHIELDS = 3
     private val SHIELD_EVERY_N_CATCHES = 20
 
     // ── Combo decay ───────────────────────────────────────────────────────────
     private val COMBO_DECAY_DELAY_MS = 3500L
-    private val comboDecayRunnable: Runnable = Runnable { decayCombo() }
+    private val comboDecayRunnable:  Runnable = Runnable { decayCombo() }
+    private val bonusExpireRunnable: Runnable = Runnable {
+        binding.gameView.clearBonus()
+    }
     private var unlockedIndices = mutableListOf(0, 1, 2, 3)
     private var currentAnimalIdx = 0
     private var soundOn = true
@@ -275,6 +279,7 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
         shieldCount = 0
         bonusCoinsActive = false
         bonusCatchCount = 0
+        mainHandler.removeCallbacks(bonusExpireRunnable)
         mainHandler.removeCallbacks(comboDecayRunnable)
         setControlsState()
         updateLevelUI()
@@ -351,10 +356,12 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
             updatePowerUpBar()
         }
 
-        // Spawn bonus star periodically
+        // Spawn bonus star periodically, auto-expire after 3 s if not collected
         bonusCatchCount++
         if (bonusCatchCount % BONUS_SPAWN_EVERY == 0 && binding.gameView.bonusX < 0f) {
             binding.gameView.spawnBonus()
+            mainHandler.removeCallbacks(bonusExpireRunnable)
+            mainHandler.postDelayed(bonusExpireRunnable, BONUS_EXPIRE_MS)
         }
 
         playSound(soundTrap)
@@ -402,6 +409,7 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
         bonusCoinsActive = false
         bonusCatchCount = 0
         binding.gameView.clearBonus()
+        mainHandler.removeCallbacks(bonusExpireRunnable)
         mainHandler.removeCallbacks(comboDecayRunnable)
         binding.gameView.applyLevel(level)
         playSound(soundGameOver)
@@ -527,6 +535,7 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
     // ── Bonus star hit ────────────────────────────────────────────────────────
 
     private fun onBonusHit() {
+        mainHandler.removeCallbacks(bonusExpireRunnable) // player collected it in time
         bonusCoinsActive = true
         bonusEndTime = System.currentTimeMillis() + BONUS_DURATION_MS
         binding.gameView.clearBonus()
