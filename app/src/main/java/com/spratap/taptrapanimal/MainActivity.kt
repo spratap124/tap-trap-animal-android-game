@@ -22,32 +22,32 @@ import java.util.*
 
 class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
 
-    // --- Animal data (matches index.html) ---
+    // --- Animal data — coin costs raised significantly to make unlocking hard ---
     private val animals = listOf(
-        Animal("🐭", "🧀", 0, "Rat"),
-        Animal("🐶", "🦴", 0, "Dog"),
-        Animal("🐱", "🐟", 0, "Cat"),
-        Animal("🐰", "🥕", 0, "Rabbit"),
-        Animal("🐼", "🎋", 500, "Panda"),
-        Animal("🐵", "🍌", 750, "Monkey"),
-        Animal("🐮", "🌽", 1000, "Cow"),
-        Animal("🐷", "🍎", 1250, "Pig"),
-        Animal("🐔", "🌾", 1500, "Chicken"),
-        Animal("🐸", "🪰", 1750, "Frog"),
-        Animal("🐻", "🍯", 2000, "Bear"),
-        Animal("🐯", "🍖", 2500, "Tiger"),
-        Animal("🦁", "🍖", 3000, "Lion"),
-        Animal("🐨", "🌿", 3500, "Koala"),
-        Animal("🦊", "🍗", 4000, "Fox"),
-        Animal("🦄", "🍭", 5000, "Unicorn"),
-        Animal("🐧", "🐟", 6000, "Penguin"),
-        Animal("🐙", "🦐", 7000, "Octopus"),
-        Animal("🦉", "🪱", 8000, "Owl"),
-        Animal("🦈", "🐠", 9000, "Shark"),
-        Animal("🦒", "🍃", 10000, "Giraffe"),
-        Animal("🦓", "🌿", 11000, "Zebra"),
-        Animal("🐘", "🍉", 12500, "Elephant"),
-        Animal("🐲", "🔥", 15000, "Dragon")
+        Animal("🐭", "🧀", 0,      "Rat"),
+        Animal("🐶", "🦴", 0,      "Dog"),
+        Animal("🐱", "🐟", 0,      "Cat"),
+        Animal("🐰", "🥕", 0,      "Rabbit"),
+        Animal("🐼", "🎋", 2000,   "Panda"),
+        Animal("🐵", "🍌", 3500,   "Monkey"),
+        Animal("🐮", "🌽", 5000,   "Cow"),
+        Animal("🐷", "🍎", 7000,   "Pig"),
+        Animal("🐔", "🌾", 9000,   "Chicken"),
+        Animal("🐸", "🪰", 12000,  "Frog"),
+        Animal("🐻", "🍯", 15000,  "Bear"),
+        Animal("🐯", "🍖", 20000,  "Tiger"),
+        Animal("🦁", "🍖", 25000,  "Lion"),
+        Animal("🐨", "🌿", 32000,  "Koala"),
+        Animal("🦊", "🍗", 40000,  "Fox"),
+        Animal("🦄", "🍭", 50000,  "Unicorn"),
+        Animal("🐧", "🐟", 65000,  "Penguin"),
+        Animal("🐙", "🦐", 80000,  "Octopus"),
+        Animal("🦉", "🪱", 100000, "Owl"),
+        Animal("🦈", "🐠", 125000, "Shark"),
+        Animal("🦒", "🍃", 150000, "Giraffe"),
+        Animal("🦓", "🌿", 180000, "Zebra"),
+        Animal("🐘", "🍉", 220000, "Elephant"),
+        Animal("🐲", "🔥", 300000, "Dragon")
     )
 
     // --- Game state ---
@@ -99,6 +99,9 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
     // --- Vibration ---
     private lateinit var vibrator: Vibrator
 
+    // --- Ads ---
+    private lateinit var adManager: AdManager
+
     // --- View binding ---
     private lateinit var binding: ActivityMainBinding
 
@@ -137,6 +140,9 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
         initSound()
         initVibrator()
         tts = TextToSpeech(this, this)
+
+        adManager = AdManager(this)
+        adManager.init()
 
         setupGame()
         setupListeners()
@@ -265,6 +271,7 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
             updateSoundBtn()
             if (!soundOn) tts?.stop()
         }
+        binding.watchAdShieldBtn.setOnClickListener { watchAdForShield() }
     }
 
     private fun startGame() {
@@ -419,6 +426,36 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
         binding.gameView.centerTrap()
         updateLevelUI()
         updatePowerUpBar()
+
+        // Show interstitial ad on every game over — game is paused so timing is fine
+        binding.gameView.stopLoop()
+        setControlsState()
+        adManager.showInterstitial {
+            // Ad dismissed — nothing to do, player taps Play to restart
+        }
+    }
+
+    // ── Watch Ad for free shield ──────────────────────────────────────────
+    private fun watchAdForShield() {
+        if (shieldCount >= MAX_SHIELDS) {
+            showToast("🛡️ Already at max shields!")
+            return
+        }
+        if (!adManager.isRewardedReady) {
+            showToast("📺 Ad not ready yet…")
+            return
+        }
+        adManager.showRewardedAd(
+            onRewarded = {
+                if (shieldCount < MAX_SHIELDS) {
+                    shieldCount++
+                    updatePowerUpBar()
+                    showToast("🛡️ Free shield earned!")
+                    binding.gameView.sparkle(big = true)
+                    savePrefs()
+                }
+            }
+        )
     }
 
     // ── Level system ──────────────────────────────────────────────────────────
@@ -622,18 +659,46 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
         recycler.layoutManager = GridLayoutManager(this, 2)
 
         lateinit var adapter: ShopAdapter
-        adapter = ShopAdapter(animals, unlockedIndices, coins) { idx ->
+
+        val onBuy: (Int) -> Unit = { idx ->
             if (coins >= animals[idx].cost) {
                 coins -= animals[idx].cost
                 unlockedIndices.add(idx)
                 savePrefs()
                 updateUI()
                 shopCoinsText.text = "$coins 🪙"
-                // updateCoins syncs the new balance into the adapter so it
-                // re-evaluates isEnabled for every remaining BUY button
                 adapter.updateCoins(coins)
             }
         }
+
+        val onWatchAd: (Int) -> Unit = { idx ->
+            if (!adManager.isRewardedReady) {
+                showToast("📺 Ad loading, try again shortly")
+            } else {
+                adManager.showRewardedAd(
+                    onRewarded = {
+                        if (!unlockedIndices.contains(idx)) {
+                            unlockedIndices.add(idx)
+                            savePrefs()
+                            updateUI()
+                            shopCoinsText.text = "$coins 🪙"
+                            adapter.updateCoins(coins)
+                            adapter.updateAdReady(adManager.isRewardedReady)
+                            showToast("🎉 ${animals[idx].name} unlocked!")
+                        }
+                    },
+                    onDismissed = {
+                        adapter.updateAdReady(adManager.isRewardedReady)
+                    }
+                )
+            }
+        }
+
+        adapter = ShopAdapter(
+            animals, unlockedIndices, coins,
+            adManager.isRewardedReady,
+            onBuy, onWatchAd
+        )
         recycler.adapter = adapter
 
         dialog.findViewById<View>(R.id.shopCloseBtn).setOnClickListener {
@@ -655,5 +720,6 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
         tts?.shutdown()
         soundPool?.release()
         mainHandler.removeCallbacksAndMessages(null)
+        adManager.destroy()
     }
 }

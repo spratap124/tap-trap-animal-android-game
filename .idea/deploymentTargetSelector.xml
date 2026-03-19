@@ -15,7 +15,7 @@
       </SelectionState>
       <SelectionState runConfigName="New Run Config">
         <option name="selectionMode" value="DROPDOWN" />
-        <DropdownSelection timestamp="2026-03-19T20:16:21.800543Z">
+        <DropdownSelection timestamp="2026-03-19T20:26:28.545221Z">
           <Target type="DEFAULT_BOOT">
             <handle>
               <DeviceId pluginId="LocalEmulator" identifier="path=/Users/spratap/.android/avd/Medium_Phone_2.avd" />
