@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Android 12+ splash screen: full game icon fills the splash background -->
+    <style name="Theme.TapTrapAnimal" parent="Theme.AppCompat.NoActionBar">
+        <item name="android:windowBackground">@color/bgDark</item>
+        <item name="android:statusBarColor">#111111</item>
+        <item name="android:navigationBarColor">#111111</item>
+        <item name="android:windowLightStatusBar">false</item>
+        <!-- Splash screen: dark background matching the icon border -->
+        <item name="android:windowSplashScreenBackground">#1a0800</item>
+        <!-- Use full game icon as the splash icon -->
+        <item name="android:windowSplashScreenAnimatedIcon">@drawable/game_icon</item>
+        <!-- No extra circle background behind the icon -->
+        <item name="android:windowSplashScreenIconBackgroundColor">@android:color/transparent</item>
+    </style>
+</resources>

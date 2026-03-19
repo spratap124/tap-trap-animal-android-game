@@ -58,10 +58,9 @@ class GameView @JvmOverloads constructor(
     // emojiSizeDp only drives maxPos() so the animal can't go off-screen
     private val emojiSizeDp = 52f
 
-    // Hit zones are derived from the actual rendered emoji size so they scale
-    // correctly on every screen density, avoiding false positives on dense displays.
-    // 0.65× the emoji height = roughly the visual width of a square emoji.
-    private val trapHitPx  get() = animalPaint.textSize * 0.65f
+    // Trap hit zone is deliberately wide: animal just needs to be "near" the trap.
+    // 1.4× emoji size means the animal's edge entering the trap area counts as caught.
+    private val trapHitPx  get() = animalPaint.textSize * 1.4f
     private val foodHitPx  get() = foodPaint.textSize  * 0.75f
     private val bonusHitPx get() = bonusPaint.textSize * 0.65f
 
@@ -174,7 +173,7 @@ class GameView @JvmOverloads constructor(
 
         // ── Proximity danger glow (drawn BEFORE clip so it glows as a border) ──
         val distToTrap = abs(pos - trapPos)
-        val glowThreshPx = 65f * density
+        val glowThreshPx = animalPaint.textSize * 1.8f
         if (distToTrap < glowThreshPx && gameRunning) {
             val intensity = (1f - distToTrap / glowThreshPx).coerceIn(0f, 1f)
             glowPaint.color = Color.argb((intensity * 220).toInt(), 255, 55, 55)
