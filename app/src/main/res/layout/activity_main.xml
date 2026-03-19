@@ -289,8 +289,8 @@
     </LinearLayout>
 
     <!-- ── Power-up status bar (shield / double-coins) ─────────────────── -->
-    <!-- Anchored above the play/pause button on the left — clear of the HUD,
-         soundBtn, and shopBtn on all screen sizes. -->
+    <!-- Floats centred in the dead-space between HUD and tapBtn.
+         visibility:gone has zero height so it never affects other views. -->
     <TextView
         android:id="@+id/powerUpBar"
         android:layout_width="wrap_content"
@@ -305,12 +305,13 @@
         android:background="@drawable/badge_bg"
         android:gravity="center"
         android:elevation="8dp"
-        android:layout_marginStart="16dp"
-        android:layout_marginBottom="6dp"
-        app:layout_constraintBottom_toTopOf="@id/playPauseBtn"
-        app:layout_constraintStart_toStartOf="parent" />
+        app:layout_constraintTop_toBottomOf="@id/hudGrid"
+        app:layout_constraintBottom_toTopOf="@id/tapBtn"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintVertical_bias="0.5" />
 
-    <!-- ── Play / Pause button (bottom-left, icon style) ───────────────── -->
+    <!-- ── Play / Pause button — sits just above the tapBtn, left side ─── -->
     <Button
         android:id="@+id/playPauseBtn"
         android:layout_width="60dp"
@@ -320,9 +321,9 @@
         android:textSize="24sp"
         android:background="@drawable/btn_primary_bg"
         android:layout_marginStart="16dp"
-        android:layout_marginBottom="16dp"
+        android:layout_marginBottom="10dp"
         android:stateListAnimator="@null"
-        app:layout_constraintBottom_toBottomOf="@id/tapBtn"
+        app:layout_constraintBottom_toTopOf="@id/tapBtn"
         app:layout_constraintStart_toStartOf="parent" />
 
     <!-- ── Tap button ─────────────────────────────────────────────────────── -->
@@ -341,32 +342,32 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent" />
 
-    <!-- ── Shop button ────────────────────────────────────────────────────── -->
+    <!-- ── Shop button — above tapBtn, right side (mirrors playPauseBtn) ── -->
     <TextView
         android:id="@+id/shopBtn"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="🛒"
-        android:textSize="28sp"
+        android:textSize="32sp"
         android:layout_marginEnd="20dp"
-        android:layout_marginBottom="16dp"
+        android:layout_marginBottom="10dp"
         android:clickable="true"
         android:focusable="true"
-        app:layout_constraintBottom_toBottomOf="@id/tapBtn"
+        app:layout_constraintBottom_toTopOf="@id/tapBtn"
         app:layout_constraintEnd_toEndOf="parent" />
 
-    <!-- ── Sound button ───────────────────────────────────────────────────── -->
+    <!-- ── Sound button — above shopBtn, right side ───────────────────── -->
     <TextView
         android:id="@+id/soundBtn"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="🔊"
-        android:textSize="28sp"
+        android:textSize="26sp"
         android:layout_marginEnd="20dp"
         android:layout_marginBottom="8dp"
         android:clickable="true"
         android:focusable="true"
-        app:layout_constraintBottom_toTopOf="@id/tapBtn"
+        app:layout_constraintBottom_toTopOf="@id/shopBtn"
         app:layout_constraintEnd_toEndOf="parent" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>
