@@ -75,6 +75,20 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
     private val MAX_SHIELDS = 3
     private val SHIELD_EVERY_N_CATCHES = 20
 
+    // ── Frenzy mode ────────────────────────────────────────────────────────────
+    private var frenzyActive = false
+    private val FRENZY_TRIGGER_STREAK = 10
+    private val FRENZY_DURATION_MS = 5000L
+    private val frenzyEndRunnable = Runnable { endFrenzy() }
+
+    // ── Slow-mo power-up ───────────────────────────────────────────────────────
+    private var slowMoActive = false
+    private val SLOWMO_DURATION_MS = 4000L
+    private val SLOWMO_SPAWN_EVERY = 15
+    private val SLOWMO_EXPIRE_MS = 3500L
+    private val slowMoEndRunnable = Runnable { endSlowMo() }
+    private val slowMoExpireRunnable = Runnable { binding.gameView.clearSlowMo() }
+
     // ── Combo decay ───────────────────────────────────────────────────────────
     private val COMBO_DECAY_DELAY_MS = 3500L
     private val comboDecayRunnable:  Runnable = Runnable { decayCombo() }
@@ -87,6 +101,7 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
     private val TEMP_UNLOCK_DURATION_MS = 2 * 60 * 60 * 1000L  // 2 hours
     private var currentAnimalIdx = 0
     private var soundOn = true
+    private var announceOn = true
 
     // --- TTS ---
     private var tts: TextToSpeech? = null
@@ -165,6 +180,7 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
         high = prefs.getInt("high", 0)
         bestLevel = prefs.getInt("bestLevel", 1)
         soundOn = prefs.getBoolean("soundOn", true)
+        announceOn = prefs.getBoolean("announceOn", true)
         val saved = prefs.getString("unlocked", "0,1,2,3") ?: "0,1,2,3"
         unlockedIndices = saved.split(",")
             .mapNotNull { it.trim().toIntOrNull() }
@@ -194,6 +210,7 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
             .putInt("high", high)
             .putInt("bestLevel", bestLevel)
             .putBoolean("soundOn", soundOn)
+            .putBoolean("announceOn", announceOn)
             .putString("unlocked", unlockedIndices.joinToString(","))
             .putString("tempUnlocked", tempStr)
             .apply()
@@ -269,7 +286,7 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
     }
 
     private fun announceAnimal(text: String) {
-        if (!soundOn || !ttsReady) return
+        if (!soundOn || !announceOn || !ttsReady) return
         tts?.speak(text, TextToSpeech.QUEUE_FLUSH, null, "tts_${System.currentTimeMillis()}")
     }
 
@@ -306,13 +323,19 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
         binding.gameView.stopLoop()
         binding.gameView.resetSpeed()
         binding.gameView.clearBonus()
+        binding.gameView.clearSlowMo()
         level = 1
         catches = 0
         shieldCount = 0
         bonusCoinsActive = false
         bonusCatchCount = 0
+        frenzyActive = false
+        slowMoActive = false
         mainHandler.removeCallbacks(bonusExpireRunnable)
         mainHandler.removeCallbacks(comboDecayRunnable)
+        mainHandler.removeCallbacks(frenzyEndRunnable)
+        mainHandler.removeCallbacks(slowMoEndRunnable)
+        mainHandler.removeCallbacks(slowMoExpireRunnable)
         setControlsState()
         updateLevelUI()
         updatePowerUpBar()
@@ -344,8 +367,11 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
             GameView.TapResult.TRAP_HIT -> onTrapHit()
             GameView.TapResult.FOOD_HIT -> onFoodHit()
             GameView.TapResult.BONUS_HIT -> onBonusHit()
+            GameView.TapResult.SLOWMO_HIT -> onSlowMoHit()
             GameView.TapResult.MISS -> {
-                if (shieldCount > 0) {
+                if (frenzyActive) {
+                    onFrenzyTap()
+                } else if (shieldCount > 0) {
                     shieldCount--
                     updatePowerUpBar()
                     showToast("🛡️ Shield blocked the miss!")
@@ -394,6 +420,18 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
             binding.gameView.spawnBonus()
             mainHandler.removeCallbacks(bonusExpireRunnable)
             mainHandler.postDelayed(bonusExpireRunnable, BONUS_EXPIRE_MS)
+        }
+
+        // Spawn slow-mo clock periodically
+        if (level >= 10 && catches % SLOWMO_SPAWN_EVERY == 0 && binding.gameView.slowMoX < 0f && !slowMoActive) {
+            binding.gameView.spawnSlowMo()
+            mainHandler.removeCallbacks(slowMoExpireRunnable)
+            mainHandler.postDelayed(slowMoExpireRunnable, SLOWMO_EXPIRE_MS)
+        }
+
+        // Frenzy mode on big streak
+        if (trapStreak == FRENZY_TRIGGER_STREAK && !frenzyActive) {
+            startFrenzy()
         }
 
         playSound(soundTrap)
@@ -520,9 +558,15 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
         bonusCoinsActive = false
         bonusCatchCount = 0
         streakOfferShownAt = 0
+        frenzyActive = false
+        slowMoActive = false
         binding.gameView.clearBonus()
+        binding.gameView.clearSlowMo()
         mainHandler.removeCallbacks(bonusExpireRunnable)
         mainHandler.removeCallbacks(comboDecayRunnable)
+        mainHandler.removeCallbacks(frenzyEndRunnable)
+        mainHandler.removeCallbacks(slowMoEndRunnable)
+        mainHandler.removeCallbacks(slowMoExpireRunnable)
         binding.gameView.applyLevel(level)
         binding.gameView.centerTrap()
         updateLevelUI()
@@ -590,8 +634,8 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
         }
         adManager.showRewardedAd(
             onRewarded = {
-                coins += 500
-                showToast("🪙 +500 coins!")
+                coins += 1000
+                showToast("🪙 +1000 coins!")
                 updateUI()
                 savePrefs()
             }
@@ -762,6 +806,58 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
         }, BONUS_DURATION_MS)
     }
 
+    // ── Frenzy mode ──────────────────────────────────────────────────────────
+
+    private fun startFrenzy() {
+        frenzyActive = true
+        binding.gameView.frenzyActive = true
+        playSound(soundMilestone)
+        vibrateStrong()
+        showToast("🔥🔥 FRENZY! TAP FAST! 🔥🔥")
+        binding.gameView.sparkle(big = true)
+        binding.gameView.sparkle(binding.gameView.width * 0.2f, binding.gameView.height / 2f, big = true)
+        binding.gameView.sparkle(binding.gameView.width * 0.8f, binding.gameView.height / 2f, big = true)
+        mainHandler.removeCallbacks(frenzyEndRunnable)
+        mainHandler.postDelayed(frenzyEndRunnable, FRENZY_DURATION_MS)
+    }
+
+    private fun endFrenzy() {
+        frenzyActive = false
+        binding.gameView.frenzyActive = false
+        trapStreak = 0
+        showToast("🔥 Frenzy over!")
+    }
+
+    /** During frenzy, every tap scores — no misses. */
+    private fun onFrenzyTap() {
+        score += combo
+        coins += 2
+        vibrateStrong()
+        binding.gameView.sparkle(big = false)
+    }
+
+    // ── Slow-mo power-up ──────────────────────────────────────────────────────
+
+    private fun onSlowMoHit() {
+        mainHandler.removeCallbacks(slowMoExpireRunnable)
+        slowMoActive = true
+        binding.gameView.slowMoActive = true
+        binding.gameView.clearSlowMo()
+        playSound(soundMilestone)
+        vibrateStrong()
+        showToast("⏱️ SLOW MOTION!")
+        binding.gameView.sparkle(big = true)
+        updatePowerUpBar()
+        mainHandler.removeCallbacks(slowMoEndRunnable)
+        mainHandler.postDelayed(slowMoEndRunnable, SLOWMO_DURATION_MS)
+    }
+
+    private fun endSlowMo() {
+        slowMoActive = false
+        binding.gameView.slowMoActive = false
+        updatePowerUpBar()
+    }
+
     // ── Power-up bar ─────────────────────────────────────────────────────────
 
     private fun updatePowerUpBar() {
@@ -769,12 +865,14 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
         if (shieldCount > 0) parts.add("🛡️×$shieldCount")
         if (bonusCoinsActive) {
             val secsLeft = ((bonusEndTime - System.currentTimeMillis()) / 1000L).coerceAtLeast(0L)
-            parts.add("🌟×2\n${secsLeft}s")
+            parts.add("🌟×2 ${secsLeft}s")
         }
+        if (frenzyActive) parts.add("🔥 FRENZY")
+        if (slowMoActive) parts.add("⏱️ SLOW")
         if (parts.isEmpty()) {
             binding.powerUpBar.visibility = View.GONE
         } else {
-            binding.powerUpBar.text = parts.joinToString("\n")
+            binding.powerUpBar.text = parts.joinToString("  ")
             binding.powerUpBar.visibility = View.VISIBLE
         }
     }
@@ -797,22 +895,53 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
     // ── Settings popup ────────────────────────────────────────────────────────
 
     private fun openSettings() {
-        val soundLabel = if (soundOn) "🔊  Sound: ON" else "🔇  Sound: OFF"
-        val items = arrayOf(soundLabel, "❓  How to Play")
+        val dialog = Dialog(this, R.style.ShopDialogTheme)
+        dialog.requestWindowFeature(Window.FEATURE_NO_TITLE)
+        dialog.setContentView(R.layout.dialog_settings)
+        dialog.window?.setLayout(
+            (resources.displayMetrics.widthPixels * 0.88).toInt(),
+            android.view.ViewGroup.LayoutParams.WRAP_CONTENT
+        )
 
-        android.app.AlertDialog.Builder(this, R.style.ShopDialogTheme)
-            .setTitle("⚙️  Settings")
-            .setItems(items) { _, which ->
-                when (which) {
-                    0 -> {
-                        soundOn = !soundOn
-                        savePrefs()
-                        if (!soundOn) tts?.stop()
-                    }
-                    1 -> openInstructions()
-                }
-            }
-            .show()
+        val soundToggle = dialog.findViewById<TextView>(R.id.soundToggle)
+        val announceToggle = dialog.findViewById<TextView>(R.id.announceToggle)
+
+        fun refreshToggles() {
+            soundToggle.text = if (soundOn) "ON" else "OFF"
+            soundToggle.setBackgroundResource(
+                if (soundOn) R.drawable.settings_toggle_on else R.drawable.settings_toggle_off
+            )
+            announceToggle.text = if (announceOn) "ON" else "OFF"
+            announceToggle.setBackgroundResource(
+                if (announceOn) R.drawable.settings_toggle_on else R.drawable.settings_toggle_off
+            )
+        }
+        refreshToggles()
+
+        dialog.findViewById<View>(R.id.soundRow).setOnClickListener {
+            soundOn = !soundOn
+            if (!soundOn) tts?.stop()
+            savePrefs()
+            refreshToggles()
+        }
+
+        dialog.findViewById<View>(R.id.announceRow).setOnClickListener {
+            announceOn = !announceOn
+            if (!announceOn) tts?.stop()
+            savePrefs()
+            refreshToggles()
+        }
+
+        dialog.findViewById<View>(R.id.settingsHowToPlayBtn).setOnClickListener {
+            dialog.dismiss()
+            openInstructions()
+        }
+
+        dialog.findViewById<View>(R.id.settingsCloseBtn).setOnClickListener {
+            dialog.dismiss()
+        }
+
+        dialog.show()
     }
 
     // ── Shop ──────────────────────────────────────────────────────────────────
@@ -898,12 +1027,12 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
         watchAdCoinsBtn.setOnClickListener {
             adManager.showRewardedAd(
                 onRewarded = {
-                coins += 500
+                coins += 1000
                 updateUI()
                 shopCoinsText.text = "$coins 🪙"
                 adapter.updateCoins(coins)
                 savePrefs()
-                showToast("🪙 +500 coins!")
+                showToast("🪙 +1000 coins!")
                 },
                 onDismissed = {
                     watchAdCoinsBtn.isEnabled = adManager.isRewardedReady
