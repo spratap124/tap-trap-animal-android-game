@@ -106,6 +106,8 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
     private lateinit var adManager: AdManager
     private var gameOverCount = 0          // lifetime counter for frequency cap
     private var streakOfferShownAt = 0     // trapStreak value when offer was last shown
+    // True while a rewarded ad is on screen — prevents onPause() from wiping game state
+    private var isShowingContinueAd = false
 
     // --- View binding ---
     private lateinit var binding: ActivityMainBinding
@@ -286,18 +288,17 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
         }
         binding.tapBtn.setOnClickListener { handleTap() }
         binding.shopBtn.setOnClickListener { openShop() }
-        binding.instrBtn.setOnClickListener { openInstructions() }
-        binding.soundBtn.setOnClickListener {
-            soundOn = !soundOn
-            savePrefs()
-            updateSoundBtn()
-            if (!soundOn) tts?.stop()
-        }
         binding.watchAdShieldBtn.setOnClickListener { watchAdForShield() }
+        binding.settingsBtn.setOnClickListener { openSettings() }
     }
 
     private fun startGame() {
         binding.gameView.startLoop()
+        setControlsState()
+    }
+
+    private fun pauseGame() {
+        binding.gameView.stopLoop()
         setControlsState()
     }
 
@@ -471,11 +472,17 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
 
         continueBtn.setOnClickListener {
             dialog.dismiss()
+            isShowingContinueAd = true
+            var rewardEarned = false
             adManager.showRewardedAd(
-                onRewarded = { continueGame() },
+                onRewarded = {
+                    rewardEarned = true
+                    continueGame()
+                },
                 onDismissed = {
-                    // User skipped the ad — do a full reset instead
-                    doFullReset()
+                    isShowingContinueAd = false
+                    // Only reset if the player skipped the ad without earning the reward
+                    if (!rewardEarned) doFullReset()
                 }
             )
         }
@@ -490,8 +497,12 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
 
     /** Resume after watching a Continue ad — nothing is reset. */
     private fun continueGame() {
+        // Re-apply level in case onPause() touched speed (shouldn't happen now, but safety net)
+        binding.gameView.applyLevel(level)
         binding.gameView.startLoop()
         setControlsState()
+        updateUI()
+        updateLevelUI()
         showToast("✅ Streak saved! Keep going!")
         binding.gameView.sparkle(big = true)
     }
@@ -579,8 +590,8 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
         }
         adManager.showRewardedAd(
             onRewarded = {
-                coins += 100
-                showToast("🪙 +100 coins!")
+                coins += 500
+                showToast("🪙 +500 coins!")
                 updateUI()
                 savePrefs()
             }
@@ -677,7 +688,7 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
     }
 
     private fun updateSoundBtn() {
-        binding.soundBtn.text = if (soundOn) "🔊" else "🔇"
+        // Sound state is shown inside the settings popup — nothing to update in the top bar
     }
 
     private fun showToast(msg: String) {
@@ -783,6 +794,27 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
         binding.gameView.setTrackBackground(*theme)
     }
 
+    // ── Settings popup ────────────────────────────────────────────────────────
+
+    private fun openSettings() {
+        val soundLabel = if (soundOn) "🔊  Sound: ON" else "🔇  Sound: OFF"
+        val items = arrayOf(soundLabel, "❓  How to Play")
+
+        android.app.AlertDialog.Builder(this, R.style.ShopDialogTheme)
+            .setTitle("⚙️  Settings")
+            .setItems(items) { _, which ->
+                when (which) {
+                    0 -> {
+                        soundOn = !soundOn
+                        savePrefs()
+                        if (!soundOn) tts?.stop()
+                    }
+                    1 -> openInstructions()
+                }
+            }
+            .show()
+    }
+
     // ── Shop ──────────────────────────────────────────────────────────────────
 
     private fun openInstructions() {
@@ -800,7 +832,8 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
     }
 
     private fun openShop() {
-        stopGame()
+        val wasRunning = binding.gameView.gameRunning
+        if (wasRunning) pauseGame()
 
         val dialog = Dialog(this, R.style.ShopDialogTheme)
         dialog.requestWindowFeature(Window.FEATURE_NO_TITLE)
@@ -865,12 +898,12 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
         watchAdCoinsBtn.setOnClickListener {
             adManager.showRewardedAd(
                 onRewarded = {
-                    coins += 100
-                    updateUI()
-                    shopCoinsText.text = "$coins 🪙"
-                    adapter.updateCoins(coins)
-                    savePrefs()
-                    showToast("🪙 +100 coins!")
+                coins += 500
+                updateUI()
+                shopCoinsText.text = "$coins 🪙"
+                adapter.updateCoins(coins)
+                savePrefs()
+                showToast("🪙 +500 coins!")
                 },
                 onDismissed = {
                     watchAdCoinsBtn.isEnabled = adManager.isRewardedReady
@@ -880,6 +913,7 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
 
         dialog.findViewById<View>(R.id.shopCloseBtn).setOnClickListener {
             dialog.dismiss()
+            if (wasRunning) startGame()
         }
 
         dialog.show()
@@ -889,7 +923,10 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
 
     override fun onPause() {
         super.onPause()
-        stopGame()
+        // Don't wipe game state when a continue-ad is on screen —
+        // the ad takes over the Activity which triggers onPause(), but the
+        // player hasn't lost yet and expects to resume after the ad.
+        if (!isShowingContinueAd) stopGame()
     }
 
     override fun onDestroy() {

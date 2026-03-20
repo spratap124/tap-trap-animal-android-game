@@ -96,11 +96,16 @@ class GameView @JvmOverloads constructor(
     var onFoodHit: (() -> Unit)? = null
     var onMiss: (() -> Unit)? = null
 
+    private var lastFrameNanos = 0L
     private val choreographer = Choreographer.getInstance()
     private val frameCallback = object : Choreographer.FrameCallback {
         override fun doFrame(frameTimeNanos: Long) {
             if (gameRunning) {
-                update()
+                val deltaNanos = if (lastFrameNanos == 0L) 0L else frameTimeNanos - lastFrameNanos
+                lastFrameNanos = frameTimeNanos
+                val deltaMs = (deltaNanos / 1_000_000f).coerceIn(0f, 50f)
+                val timeFactor = deltaMs / 16.667f
+                update(timeFactor)
                 invalidate()
                 choreographer.postFrameCallback(this)
             }
@@ -134,6 +139,7 @@ class GameView @JvmOverloads constructor(
     fun startLoop() {
         if (!gameRunning) {
             gameRunning = true
+            lastFrameNanos = 0L
             choreographer.postFrameCallback(frameCallback)
         }
     }
@@ -146,14 +152,15 @@ class GameView @JvmOverloads constructor(
 
     private fun maxPos(): Float = (width - emojiSizeDp * density).coerceAtLeast(0f)
 
-    private fun update() {
+    private fun update(timeFactor: Float) {
+        if (timeFactor <= 0f) return
         val max = maxPos()
-        pos += speed * density * dir
+        pos += speed * density * dir * timeFactor
         if (pos > max) { pos = max; dir = -1f }
         if (pos < 0f) { pos = 0f; dir = 1f }
 
         if (trapMoveSpeed > 0f) {
-            trapPos += trapDir * trapMoveSpeed * density
+            trapPos += trapDir * trapMoveSpeed * density * timeFactor
             if (trapPos >= max) { trapPos = max; trapDir = -1f }
             if (trapPos <= 0f) { trapPos = 0f; trapDir = 1f }
         }
@@ -161,8 +168,8 @@ class GameView @JvmOverloads constructor(
         val iter = particles.iterator()
         while (iter.hasNext()) {
             val p = iter.next()
-            p.x += p.vx
-            p.y += p.vy
+            p.x += p.vx * timeFactor
+            p.y += p.vy * timeFactor
             p.life--
             if (p.life <= 0) iter.remove()
         }

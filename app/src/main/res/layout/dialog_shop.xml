@@ -68,7 +68,7 @@
             android:id="@+id/shopWatchAdCoinsBtn"
             android:layout_width="wrap_content"
             android:layout_height="36dp"
-            android:text="📺 +100 🪙"
+            android:text="📺 +500 🪙"
             android:textColor="#ffffff"
             android:textSize="12sp"
             android:textStyle="bold"
