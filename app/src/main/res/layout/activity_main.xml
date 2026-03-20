@@ -111,26 +111,14 @@
             android:paddingHorizontal="12dp"
             android:paddingVertical="8dp" />
 
-        <!-- Sound toggle lives in the top bar — it's a global setting -->
+        <!-- Free shield via ad — top-right, always visible -->
         <TextView
-            android:id="@+id/soundBtn"
+            android:id="@+id/watchAdShieldBtn"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="🔊"
+            android:text="🎁🛡️"
             android:textSize="20sp"
             android:paddingStart="8dp"
-            android:paddingVertical="8dp"
-            android:clickable="true"
-            android:focusable="true" />
-
-        <!-- Instructions -->
-        <TextView
-            android:id="@+id/instrBtn"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="❓"
-            android:textSize="20sp"
-            android:paddingStart="4dp"
             android:paddingEnd="4dp"
             android:paddingVertical="8dp"
             android:clickable="true"
@@ -367,7 +355,7 @@
         app:layout_constraintBottom_toBottomOf="@id/tapBtn"
         app:layout_constraintStart_toStartOf="parent" />
 
-    <!-- ── Shop button — pinned to right edge ───────────────────────── -->
+    <!-- ── Shop button — pinned to right edge, vertically centred with tapBtn -->
     <TextView
         android:id="@+id/shopBtn"
         android:layout_width="wrap_content"
@@ -380,6 +368,21 @@
         app:layout_constraintTop_toTopOf="@id/tapBtn"
         app:layout_constraintBottom_toBottomOf="@id/tapBtn"
         app:layout_constraintEnd_toEndOf="parent" />
+
+    <!-- ── Settings — absolute bottom-right corner ───────────────────── -->
+    <TextView
+        android:id="@+id/settingsBtn"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="⚙️"
+        android:textSize="22sp"
+        android:padding="10dp"
+        android:clickable="true"
+        android:focusable="true"
+        android:layout_marginEnd="8dp"
+        android:layout_marginBottom="8dp"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintBottom_toBottomOf="parent" />
 
 
 </androidx.constraintlayout.widget.ConstraintLayout>

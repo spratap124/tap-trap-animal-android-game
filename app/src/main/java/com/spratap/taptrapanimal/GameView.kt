@@ -13,6 +13,7 @@ import android.util.AttributeSet
 import android.view.Choreographer
 import android.view.View
 import kotlin.math.abs
+import kotlin.math.sin
 import kotlin.random.Random
 
 class GameView @JvmOverloads constructor(
@@ -27,7 +28,7 @@ class GameView @JvmOverloads constructor(
         const val CATCHES_PER_LEVEL = 10
     }
 
-    enum class TapResult { TRAP_HIT, FOOD_HIT, BONUS_HIT, MISS }
+    enum class TapResult { TRAP_HIT, FOOD_HIT, BONUS_HIT, SLOWMO_HIT, MISS }
 
     data class Particle(
         var x: Float,
@@ -51,7 +52,17 @@ class GameView @JvmOverloads constructor(
     var trapMoveSpeed = 0f
     var foodX = 0f
     var bonusX = -1f   // -1 = no bonus on track
+    var slowMoX = -1f  // -1 = no slow-mo clock on track
     var gameRunning = false
+
+    // Frenzy & slow-mo flags (set by MainActivity)
+    var frenzyActive = false
+    var slowMoActive = false
+    var currentLevel = 1
+        private set
+
+    // Frenzy pulse timer (for gold overlay animation)
+    private var frenzyElapsedMs = 0f
 
     private val density get() = context.resources.displayMetrics.density
 
@@ -59,10 +70,10 @@ class GameView @JvmOverloads constructor(
     private val emojiSizeDp = 52f
 
     // Trap hit zone is deliberately wide: animal just needs to be "near" the trap.
-    // 1.4× emoji size means the animal's edge entering the trap area counts as caught.
     private val trapHitPx  get() = animalPaint.textSize * 1.4f
     private val foodHitPx  get() = foodPaint.textSize  * 0.75f
     private val bonusHitPx get() = bonusPaint.textSize * 0.65f
+    private val slowMoHitPx get() = slowMoPaint.textSize * 0.7f
 
     val particles = mutableListOf<Particle>()
 
@@ -79,15 +90,20 @@ class GameView @JvmOverloads constructor(
     private val trackRectF = RectF()
     private val clipPath = Path()
 
-    // Bonus star paint (drawn slightly larger so it stands out)
     private val bonusPaint = TextPaint(Paint.ANTI_ALIAS_FLAG).apply {
         textAlign = Paint.Align.LEFT
     }
+    private val slowMoPaint = TextPaint(Paint.ANTI_ALIAS_FLAG).apply {
+        textAlign = Paint.Align.LEFT
+    }
 
-    // Proximity danger glow painted as a stroke border outside the track
+    // Proximity danger glow
     private val glowPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
         style = Paint.Style.STROKE
     }
+
+    // Frenzy gold overlay
+    private val frenzyOverlayPaint = Paint()
 
     private var bgColors = intArrayOf(0xFF3A3A3A.toInt(), 0xFF2C2C2C.toInt())
 
@@ -96,11 +112,16 @@ class GameView @JvmOverloads constructor(
     var onFoodHit: (() -> Unit)? = null
     var onMiss: (() -> Unit)? = null
 
+    private var lastFrameNanos = 0L
     private val choreographer = Choreographer.getInstance()
     private val frameCallback = object : Choreographer.FrameCallback {
         override fun doFrame(frameTimeNanos: Long) {
             if (gameRunning) {
-                update()
+                val deltaNanos = if (lastFrameNanos == 0L) 0L else frameTimeNanos - lastFrameNanos
+                lastFrameNanos = frameTimeNanos
+                val deltaMs = (deltaNanos / 1_000_000f).coerceIn(0f, 50f)
+                val timeFactor = deltaMs / 16.667f
+                update(timeFactor)
                 invalidate()
                 choreographer.postFrameCallback(this)
             }
@@ -117,7 +138,8 @@ class GameView @JvmOverloads constructor(
         animalPaint.textSize = h * 0.38f
         foodPaint.textSize = h * 0.30f
         bonusPaint.textSize = h * 0.42f
-        glowPaint.strokeWidth = 5f * context.resources.displayMetrics.density
+        slowMoPaint.textSize = h * 0.34f
+        glowPaint.strokeWidth = 5f * density
         if (foodX == 0f) spawnFood()
         if (trapPos == 0f) centerTrap()
     }
@@ -134,6 +156,7 @@ class GameView @JvmOverloads constructor(
     fun startLoop() {
         if (!gameRunning) {
             gameRunning = true
+            lastFrameNanos = 0L
             choreographer.postFrameCallback(frameCallback)
         }
     }
@@ -146,23 +169,46 @@ class GameView @JvmOverloads constructor(
 
     private fun maxPos(): Float = (width - emojiSizeDp * density).coerceAtLeast(0f)
 
-    private fun update() {
+    private fun update(timeFactor: Float) {
+        if (timeFactor <= 0f) return
         val max = maxPos()
-        pos += speed * density * dir
+
+        val speedMul = when {
+            slowMoActive -> 0.4f
+            frenzyActive -> 1.25f
+            else -> 1f
+        }
+
+        pos += speed * density * dir * timeFactor * speedMul
         if (pos > max) { pos = max; dir = -1f }
         if (pos < 0f) { pos = 0f; dir = 1f }
 
         if (trapMoveSpeed > 0f) {
-            trapPos += trapDir * trapMoveSpeed * density
+            trapPos += trapDir * trapMoveSpeed * density * timeFactor * speedMul
             if (trapPos >= max) { trapPos = max; trapDir = -1f }
             if (trapPos <= 0f) { trapPos = 0f; trapDir = 1f }
+        }
+
+        // Frenzy ambient sparkles
+        if (frenzyActive) {
+            frenzyElapsedMs += timeFactor * 16.667f
+            if (Random.nextFloat() < 0.25f * timeFactor) {
+                val sx = Random.nextFloat() * width
+                val sy = Random.nextFloat() * height
+                particles.add(
+                    Particle(sx, sy,
+                        (Random.nextFloat() - 0.5f) * 3f * density,
+                        (Random.nextFloat() - 0.5f) * 3f * density,
+                        20)
+                )
+            }
         }
 
         val iter = particles.iterator()
         while (iter.hasNext()) {
             val p = iter.next()
-            p.x += p.vx
-            p.y += p.vy
+            p.x += p.vx * timeFactor
+            p.y += p.vy * timeFactor
             p.life--
             if (p.life <= 0) iter.remove()
         }
@@ -174,9 +220,24 @@ class GameView @JvmOverloads constructor(
         // ── Proximity danger glow (drawn BEFORE clip so it glows as a border) ──
         val distToTrap = abs(pos - trapPos)
         val glowThreshPx = animalPaint.textSize * 1.8f
-        if (distToTrap < glowThreshPx && gameRunning) {
+
+        // During frenzy, show a gold glow border instead of danger glow
+        if (frenzyActive) {
+            val pulse = (sin(frenzyElapsedMs / 200.0) * 0.3 + 0.7).toFloat()
+            glowPaint.color = Color.argb((pulse * 200).toInt(), 255, 215, 0)
+            val sw = glowPaint.strokeWidth / 2f
+            canvas.drawRoundRect(sw, sw, width - sw, height - sw, radius, radius, glowPaint)
+        } else if (distToTrap < glowThreshPx && gameRunning) {
             val intensity = (1f - distToTrap / glowThreshPx).coerceIn(0f, 1f)
             glowPaint.color = Color.argb((intensity * 220).toInt(), 255, 55, 55)
+            val sw = glowPaint.strokeWidth / 2f
+            canvas.drawRoundRect(sw, sw, width - sw, height - sw, radius, radius, glowPaint)
+        }
+
+        // Slow-mo blue glow border
+        if (slowMoActive && !frenzyActive) {
+            val pulse = (sin(frenzyElapsedMs / 300.0) * 0.3 + 0.7).toFloat()
+            glowPaint.color = Color.argb((pulse * 180).toInt(), 80, 180, 255)
             val sw = glowPaint.strokeWidth / 2f
             canvas.drawRoundRect(sw, sw, width - sw, height - sw, radius, radius, glowPaint)
         }
@@ -187,11 +248,23 @@ class GameView @JvmOverloads constructor(
         // Rounded background
         canvas.drawRoundRect(trackRectF, radius, radius, bgPaint)
 
+        // Frenzy gold overlay (pulsing)
+        if (frenzyActive) {
+            val pulse = (sin(frenzyElapsedMs / 200.0) * 0.15 + 0.2).toFloat()
+            frenzyOverlayPaint.color = Color.argb((pulse * 255).toInt(), 255, 215, 0)
+            canvas.drawRoundRect(trackRectF, radius, radius, frenzyOverlayPaint)
+        }
+
         val cy = height * 0.66f
 
-        // Bonus star (drawn below other items so animal appears on top)
+        // Bonus star
         if (bonusX >= 0f) {
             canvas.drawText("🌟", bonusX, cy, bonusPaint)
+        }
+
+        // Slow-mo clock
+        if (slowMoX >= 0f) {
+            canvas.drawText("⏱️", slowMoX, cy, slowMoPaint)
         }
 
         // Food
@@ -213,6 +286,12 @@ class GameView @JvmOverloads constructor(
         // Particles
         val ps = 3f * density
         for (p in particles) {
+            val alpha = (p.life * 255 / 35).coerceIn(0, 255)
+            particlePaint.color = if (frenzyActive) {
+                Color.argb(alpha, 255, 215, 0)
+            } else {
+                Color.argb(alpha, 255, 213, 79)
+            }
             canvas.drawRect(p.x, p.y, p.x + ps, p.y + ps, particlePaint)
         }
 
@@ -221,12 +300,16 @@ class GameView @JvmOverloads constructor(
 
     fun checkTap(): TapResult {
         return when {
-            bonusX >= 0f && abs(pos - bonusX) < bonusHitPx -> TapResult.BONUS_HIT
-            abs(pos - trapPos) < trapHitPx               -> TapResult.TRAP_HIT
-            abs(pos - foodX)   < foodHitPx               -> TapResult.FOOD_HIT
-            else                                          -> TapResult.MISS
+            bonusX >= 0f && abs(pos - bonusX) < bonusHitPx     -> TapResult.BONUS_HIT
+            slowMoX >= 0f && abs(pos - slowMoX) < slowMoHitPx  -> TapResult.SLOWMO_HIT
+            abs(pos - trapPos) < trapHitPx                      -> TapResult.TRAP_HIT
+            abs(pos - foodX)   < foodHitPx                      -> TapResult.FOOD_HIT
+            else                                                 -> TapResult.MISS
         }
     }
+
+    /** True when the animal just barely missed the trap (within 2x hit zone). */
+    fun isNearMiss(): Boolean = abs(pos - trapPos) < trapHitPx * 2f
 
     fun spawnFood() {
         val max = maxPos()
@@ -279,6 +362,23 @@ class GameView @JvmOverloads constructor(
         invalidate()
     }
 
+    fun spawnSlowMo() {
+        val max = maxPos()
+        if (max <= 0f) return
+        var x: Float
+        val minDistPx = 80f * density
+        do {
+            x = Random.nextFloat() * max
+        } while (abs(x - trapPos) < minDistPx || abs(x - foodX) < minDistPx)
+        slowMoX = x
+        invalidate()
+    }
+
+    fun clearSlowMo() {
+        slowMoX = -1f
+        invalidate()
+    }
+
     fun setTrackBackground(vararg colors: Int) {
         bgColors = colors
         updateBgShader()
@@ -286,6 +386,7 @@ class GameView @JvmOverloads constructor(
     }
 
     fun applyLevel(level: Int) {
+        currentLevel = level
         speed = INITIAL_SPEED + (level - 1) * LEVEL_SPEED_BONUS
         trapMoveSpeed = if (level <= 1) 0f else (level - 1) * LEVEL_TRAP_BONUS
     }
@@ -293,5 +394,9 @@ class GameView @JvmOverloads constructor(
     fun resetSpeed() {
         speed = INITIAL_SPEED
         trapMoveSpeed = 0f
+        currentLevel = 1
+        frenzyActive = false
+        slowMoActive = false
+        frenzyElapsedMs = 0f
     }
 }

@@ -5,7 +5,7 @@
     android:layout_height="wrap_content"
     android:orientation="vertical"
     android:gravity="center"
-    android:padding="14dp"
+    android:padding="12dp"
     android:layout_margin="6dp"
     android:background="@drawable/shop_item_bg">
 
@@ -14,7 +14,7 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="🐭"
-        android:textSize="40sp" />
+        android:textSize="38sp" />
 
     <TextView
         android:id="@+id/shopItemName"
@@ -24,7 +24,7 @@
         android:textColor="#ffffff"
         android:textSize="13sp"
         android:textStyle="bold"
-        android:layout_marginTop="6dp" />
+        android:layout_marginTop="4dp" />
 
     <TextView
         android:id="@+id/shopItemPrice"
@@ -33,19 +33,36 @@
         android:text="0 🪙"
         android:textColor="#aaaaaa"
         android:textSize="12sp"
-        android:layout_marginTop="4dp" />
+        android:layout_marginTop="3dp" />
 
+    <!-- Coin buy button -->
     <Button
         android:id="@+id/shopBuyBtn"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="Buy"
+        android:text="🪙 BUY"
         android:textColor="#ffffff"
-        android:textSize="13sp"
+        android:textSize="11sp"
         android:textStyle="bold"
         android:background="@drawable/btn_shop_buy_bg"
         android:stateListAnimator="@null"
-        android:layout_marginTop="8dp"
-        android:paddingVertical="8dp" />
+        android:layout_marginTop="7dp"
+        android:paddingVertical="7dp"
+        android:lines="2"
+        android:ellipsize="none" />
+
+    <!-- Watch Ad unlock button -->
+    <Button
+        android:id="@+id/shopWatchAdBtn"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="📺 Watch Ad"
+        android:textColor="#ffffff"
+        android:textSize="12sp"
+        android:textStyle="bold"
+        android:background="@drawable/btn_watch_ad_bg"
+        android:stateListAnimator="@null"
+        android:layout_marginTop="5dp"
+        android:paddingVertical="7dp" />
 
 </LinearLayout>
