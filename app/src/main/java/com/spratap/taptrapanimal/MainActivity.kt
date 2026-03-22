@@ -7,8 +7,11 @@ import android.animation.ObjectAnimator
 import android.app.Dialog
 import android.content.Context
 import android.media.AudioAttributes
+import android.media.AudioManager
+import android.media.MediaPlayer
 import android.media.SoundPool
 import android.os.*
+import android.util.Log
 import android.speech.tts.TextToSpeech
 import android.view.View
 import android.view.Window
@@ -113,6 +116,8 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
     private var soundGameOver = 0
     private var soundMilestone = 0
     private var soundFood = 0
+    private val loadedSounds = mutableSetOf<Int>()
+    private val soundResIds = mutableMapOf<Int, Int>()
 
     // --- Vibration ---
     private lateinit var vibrator: Vibrator
@@ -157,6 +162,8 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
         window.decorView.systemUiVisibility = (
             View.SYSTEM_UI_FLAG_LAYOUT_STABLE or View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN
         )
+
+        volumeControlStream = AudioManager.STREAM_MUSIC
 
         loadPrefs()
         initSound()
@@ -220,27 +227,44 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
 
     private fun initSound() {
         val attrs = AudioAttributes.Builder()
-            .setUsage(AudioAttributes.USAGE_GAME)
-            .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
+            .setUsage(AudioAttributes.USAGE_MEDIA)
+            .setContentType(AudioAttributes.CONTENT_TYPE_MUSIC)
             .build()
-        soundPool = SoundPool.Builder()
+        val pool = SoundPool.Builder()
             .setMaxStreams(4)
             .setAudioAttributes(attrs)
             .build()
-        soundTrap = loadRawSound("sound_trap")
+        pool.setOnLoadCompleteListener { _, sampleId, status ->
+            if (status == 0) loadedSounds.add(sampleId)
+        }
+        soundPool = pool
+        soundTrap     = loadRawSound("sound_trap")
         soundGameOver = loadRawSound("sound_game_over")
         soundMilestone = loadRawSound("sound_milestone")
-        soundFood = loadRawSound("sound_food")
+        soundFood     = loadRawSound("sound_food")
     }
 
     private fun loadRawSound(name: String): Int {
         val resId = resources.getIdentifier(name, "raw", packageName)
-        return if (resId != 0) soundPool?.load(this, resId, 1) ?: 0 else 0
+        if (resId == 0) return 0
+        val id = soundPool?.load(this, resId, 1) ?: 0
+        if (id != 0) soundResIds[id] = resId
+        return id
     }
 
     private fun playSound(soundId: Int) {
         if (!soundOn || soundId == 0) return
-        soundPool?.play(soundId, 1f, 1f, 1, 0, 1f)
+        if (soundId in loadedSounds) {
+            val streamId = soundPool?.play(soundId, 1f, 1f, 1, 0, 1f) ?: 0
+            if (streamId != 0) return
+        }
+        val resId = soundResIds[soundId] ?: return
+        try {
+            MediaPlayer.create(this, resId)?.apply {
+                setOnCompletionListener { it.release() }
+                start()
+            }
+        } catch (_: Exception) { }
     }
 
     // ── Vibration ─────────────────────────────────────────────────────────────
