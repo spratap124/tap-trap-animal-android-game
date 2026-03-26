@@ -16,11 +16,6 @@ class AdManager(private val activity: AppCompatActivity) {
 
     companion object {
         private const val TAG = "AdManager"
-
-        // ── Replace these with your real AdMob unit IDs from https://admob.google.com ──
-        // Test IDs (safe to use during development — never show real ads in debug builds)
-        const val INTERSTITIAL_ID = "ca-app-pub-3940256099942544/1033173712"
-        const val REWARDED_ID     = "ca-app-pub-3940256099942544/5224354917"
     }
 
     private var interstitialAd: InterstitialAd? = null
@@ -44,7 +39,7 @@ class AdManager(private val activity: AppCompatActivity) {
         interstitialLoading = true
         InterstitialAd.load(
             activity,
-            INTERSTITIAL_ID,
+            BuildConfig.ADMOB_INTERSTITIAL_UNIT_ID,
             AdRequest.Builder().build(),
             object : InterstitialAdLoadCallback() {
                 override fun onAdLoaded(ad: InterstitialAd) {
@@ -95,7 +90,7 @@ class AdManager(private val activity: AppCompatActivity) {
         rewardedLoading = true
         RewardedAd.load(
             activity,
-            REWARDED_ID,
+            BuildConfig.ADMOB_REWARDED_UNIT_ID,
             AdRequest.Builder().build(),
             object : RewardedAdLoadCallback() {
                 override fun onAdLoaded(ad: RewardedAd) {

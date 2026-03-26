@@ -7,8 +7,11 @@ import android.animation.ObjectAnimator
 import android.app.Dialog
 import android.content.Context
 import android.media.AudioAttributes
+import android.media.AudioManager
+import android.media.MediaPlayer
 import android.media.SoundPool
 import android.os.*
+import android.util.Log
 import android.speech.tts.TextToSpeech
 import android.view.View
 import android.view.Window
@@ -113,6 +116,8 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
     private var soundGameOver = 0
     private var soundMilestone = 0
     private var soundFood = 0
+    private val loadedSounds = mutableSetOf<Int>()
+    private val soundResIds = mutableMapOf<Int, Int>()
 
     // --- Vibration ---
     private lateinit var vibrator: Vibrator
@@ -121,8 +126,6 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
     private lateinit var adManager: AdManager
     private var gameOverCount = 0          // lifetime counter for frequency cap
     private var streakOfferShownAt = 0     // trapStreak value when offer was last shown
-    // True while a rewarded ad is on screen — prevents onPause() from wiping game state
-    private var isShowingContinueAd = false
 
     // --- View binding ---
     private lateinit var binding: ActivityMainBinding
@@ -157,6 +160,8 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
         window.decorView.systemUiVisibility = (
             View.SYSTEM_UI_FLAG_LAYOUT_STABLE or View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN
         )
+
+        volumeControlStream = AudioManager.STREAM_MUSIC
 
         loadPrefs()
         initSound()
@@ -220,27 +225,44 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
 
     private fun initSound() {
         val attrs = AudioAttributes.Builder()
-            .setUsage(AudioAttributes.USAGE_GAME)
-            .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
+            .setUsage(AudioAttributes.USAGE_MEDIA)
+            .setContentType(AudioAttributes.CONTENT_TYPE_MUSIC)
             .build()
-        soundPool = SoundPool.Builder()
+        val pool = SoundPool.Builder()
             .setMaxStreams(4)
             .setAudioAttributes(attrs)
             .build()
-        soundTrap = loadRawSound("sound_trap")
+        pool.setOnLoadCompleteListener { _, sampleId, status ->
+            if (status == 0) loadedSounds.add(sampleId)
+        }
+        soundPool = pool
+        soundTrap     = loadRawSound("sound_trap")
         soundGameOver = loadRawSound("sound_game_over")
         soundMilestone = loadRawSound("sound_milestone")
-        soundFood = loadRawSound("sound_food")
+        soundFood     = loadRawSound("sound_food")
     }
 
     private fun loadRawSound(name: String): Int {
         val resId = resources.getIdentifier(name, "raw", packageName)
-        return if (resId != 0) soundPool?.load(this, resId, 1) ?: 0 else 0
+        if (resId == 0) return 0
+        val id = soundPool?.load(this, resId, 1) ?: 0
+        if (id != 0) soundResIds[id] = resId
+        return id
     }
 
     private fun playSound(soundId: Int) {
         if (!soundOn || soundId == 0) return
-        soundPool?.play(soundId, 1f, 1f, 1, 0, 1f)
+        if (soundId in loadedSounds) {
+            val streamId = soundPool?.play(soundId, 1f, 1f, 1, 0, 1f) ?: 0
+            if (streamId != 0) return
+        }
+        val resId = soundResIds[soundId] ?: return
+        try {
+            MediaPlayer.create(this, resId)?.apply {
+                setOnCompletionListener { it.release() }
+                start()
+            }
+        } catch (_: Exception) { }
     }
 
     // ── Vibration ─────────────────────────────────────────────────────────────
@@ -510,7 +532,6 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
 
         continueBtn.setOnClickListener {
             dialog.dismiss()
-            isShowingContinueAd = true
             var rewardEarned = false
             adManager.showRewardedAd(
                 onRewarded = {
@@ -518,7 +539,6 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
                     continueGame()
                 },
                 onDismissed = {
-                    isShowingContinueAd = false
                     // Only reset if the player skipped the ad without earning the reward
                     if (!rewardEarned) doFullReset()
                 }
@@ -535,7 +555,6 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
 
     /** Resume after watching a Continue ad — nothing is reset. */
     private fun continueGame() {
-        // Re-apply level in case onPause() touched speed (shouldn't happen now, but safety net)
         binding.gameView.applyLevel(level)
         binding.gameView.startLoop()
         setControlsState()
@@ -1052,10 +1071,8 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
 
     override fun onPause() {
         super.onPause()
-        // Don't wipe game state when a continue-ad is on screen —
-        // the ad takes over the Activity which triggers onPause(), but the
-        // player hasn't lost yet and expects to resume after the ad.
-        if (!isShowingContinueAd) stopGame()
+        // Stop the loop only — do not use stopGame() here or minimizing wipes score/level.
+        if (binding.gameView.gameRunning) pauseGame()
     }
 
     override fun onDestroy() {

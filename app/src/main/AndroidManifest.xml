@@ -13,10 +13,10 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.TapTrapAnimal">
 
-        <!-- TODO: Replace with your real AdMob App ID from https://admob.google.com -->
+        <!-- AdMob app ID: debug = test, release = prod (see app/build.gradle manifestPlaceholders) -->
         <meta-data
             android:name="com.google.android.gms.ads.APPLICATION_ID"
-            android:value="ca-app-pub-3940256099942544~3347511713" />
+            android:value="${admobAppId}" />
 
         <activity
             android:name=".MainActivity"
