@@ -3,27 +3,70 @@ plugins {
     id 'org.jetbrains.kotlin.android'
 }
 
+// Same keys as keystore.properties.example — Android Studio UI signing does not apply to CLI Gradle
+// unless one of these files exists (copy values from Studio: keystore path, key alias, passwords).
+def keystorePropertiesFile = [
+    rootProject.file('keystore.properties'),
+    rootProject.file('key.properties'),
+    rootProject.file('app/keystore.properties'),
+].find { it.exists() }
+def keystoreProperties = new Properties()
+if (keystorePropertiesFile != null) {
+    keystorePropertiesFile.withInputStream { keystoreProperties.load(it) }
+}
+
+// AdMob: debug = Google test IDs; release = production (Play Store) IDs
+def admobTestAppId = 'ca-app-pub-3940256099942544~3347511713'
+def admobProdAppId = 'ca-app-pub-5370173675978926~8706647335'
+def admobTestInterstitial = 'ca-app-pub-3940256099942544/1033173712'
+def admobTestRewarded = 'ca-app-pub-3940256099942544/5224354917'
+def admobProdInterstitial = 'ca-app-pub-5370173675978926/4645080991'
+def admobProdRewarded = 'ca-app-pub-5370173675978926/5334378530'
+
 android {
     namespace 'com.spratap.taptrapanimal'
-    compileSdk 34
+    compileSdk 35
 
     defaultConfig {
         applicationId "com.spratap.taptrapanimal"
         minSdk 24
-        targetSdk 34
-        versionCode 1
-        versionName "1.0"
+        targetSdk 35
+        versionCode 6
+        versionName "1.0.5"
+    }
+
+    signingConfigs {
+        release {
+            if (keystorePropertiesFile != null) {
+                keyAlias keystoreProperties['keyAlias']
+                keyPassword keystoreProperties['keyPassword']
+                storeFile rootProject.file(keystoreProperties['storeFile'].toString().trim())
+                storePassword keystoreProperties['storePassword']
+            }
+        }
     }
 
     buildTypes {
+        debug {
+            manifestPlaceholders = [admobAppId: admobTestAppId]
+            buildConfigField 'String', 'ADMOB_INTERSTITIAL_UNIT_ID', "\"${admobTestInterstitial}\""
+            buildConfigField 'String', 'ADMOB_REWARDED_UNIT_ID', "\"${admobTestRewarded}\""
+        }
         release {
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+            manifestPlaceholders = [admobAppId: admobProdAppId]
+            buildConfigField 'String', 'ADMOB_INTERSTITIAL_UNIT_ID', "\"${admobProdInterstitial}\""
+            buildConfigField 'String', 'ADMOB_REWARDED_UNIT_ID', "\"${admobProdRewarded}\""
+            if (keystorePropertiesFile != null) {
+                signingConfig signingConfigs.release
+            }
         }
     }
 
     buildFeatures {
         viewBinding true
+        buildConfig true
     }
 
     compileOptions {
@@ -33,6 +76,57 @@ android {
 
     kotlinOptions {
         jvmTarget = '17'
+    }
+}
+
+// Fail fast before release signing/packaging if Play upload signing is not configured
+gradle.taskGraph.whenReady { graph ->
+    def bundle = tasks.findByPath(':app:bundleRelease')
+    def assemble = tasks.findByPath(':app:assembleRelease')
+    if ((bundle != null && graph.hasTask(bundle)) || (assemble != null && graph.hasTask(assemble))) {
+        if (keystorePropertiesFile == null) {
+            throw new GradleException(
+                'Release builds must be signed for Play. Android Studio signing (Generate Signed Bundle / ' +
+                    'Project Structure) does not configure command-line Gradle. Create keystore.properties ' +
+                    'in the project root (copy keystore.properties.example): use the same .jks path, key alias, ' +
+                    'and passwords as in Android Studio. Optional locations: key.properties or app/keystore.properties.'
+            )
+        }
+        def store = android.signingConfigs.release.storeFile
+        if (store == null || !store.exists()) {
+            def raw = keystoreProperties['storeFile']?.toString()?.trim()
+            throw new GradleException(
+                "Keystore file missing at: ${store}\n" +
+                    "Your keystore.properties storeFile is \"${raw}\". That path must exist.\n" +
+                    'Fix: set storeFile to the full path of your real .jks (where Android Studio saved it), ' +
+                    'or copy that .jks into the project and use a path relative to the project root, e.g. app/my-key.jks'
+            )
+        }
+    }
+}
+
+// Play bundle file name: prod-{versionCode}.aab (renamed after AGP writes app-release.aab)
+afterEvaluate {
+    tasks.named('bundleRelease').configure {
+        doLast {
+            def outDir = layout.buildDirectory.dir('outputs/bundle/release').get().asFile
+            def vc = android.defaultConfig.versionCode
+            def src = new File(outDir, 'app-release.aab')
+            if (!src.exists()) {
+                def aabs = outDir.listFiles({ d, name -> name.endsWith('.aab') } as FilenameFilter)
+                if (aabs != null && aabs.length == 1) src = aabs[0]
+            }
+            if (!src.exists()) {
+                logger.warn("bundleRelease rename skipped: no .aab found in ${outDir}")
+                return
+            }
+            def dst = new File(outDir, "prod-${vc}.aab")
+            if (dst.exists()) dst.delete()
+            if (!src.renameTo(dst)) {
+                throw new GradleException("Could not rename ${src.name} to ${dst.name}")
+            }
+            logger.lifecycle("Release bundle output: ${dst}")
+        }
     }
 }
 
@@ -48,4 +142,45 @@ dependencies {
     testImplementation 'junit:junit:4.13.2'
     androidTestImplementation 'androidx.test.ext:junit:1.1.5'
     androidTestImplementation 'androidx.test.espresso:espresso-core:3.5.1'
+}
+
+/**
+ * Increments versionCode and the patch segment of versionName in this file (e.g. 1.0.5 -> 1.0.6).
+ */
+tasks.register('bumpVersion') {
+    group = 'versioning'
+    description = 'Increments versionCode and patch in versionName (app/build.gradle)'
+    doLast {
+        def f = project.file('build.gradle')
+        def text = f.getText('UTF-8')
+        def codeM = (text =~ /versionCode\s+(\d+)/)
+        def nameM = (text =~ /versionName\s+"([^"]+)"/)
+        if (!codeM.find() || !nameM.find()) {
+            throw new GradleException('Could not parse versionCode or versionName in app/build.gradle')
+        }
+        def newCode = (codeM.group(1) as int) + 1
+        def parts = nameM.group(1).split('\\.')
+        if (parts.length < 2) {
+            throw new GradleException('versionName must look like 1.0.5 (at least major.minor.patch)')
+        }
+        def patch = (parts[-1] as int) + 1
+        parts[-1] = patch.toString()
+        def newName = parts.join('.')
+        text = text.replaceFirst(/versionCode\s+\d+/, "versionCode $newCode")
+        text = text.replaceFirst(/versionName\s+"[^"]+"/, "versionName \"$newName\"")
+        f.write(text, 'UTF-8')
+        println "Bumped to versionCode $newCode, versionName \"$newName\""
+    }
+}
+
+/**
+ * One command for Play upload: bumps version then builds the release AAB.
+ * Uses a second Gradle invocation so the bumped version is applied (same-run finalize would not reload build.gradle).
+ */
+tasks.register('bumpAndBundleRelease', Exec) {
+    group = 'versioning'
+    description = 'Runs bumpVersion then :app:bundleRelease (release AAB)'
+    dependsOn 'bumpVersion'
+    workingDir rootProject.projectDir
+    commandLine './gradlew', ':app:bundleRelease'
 }

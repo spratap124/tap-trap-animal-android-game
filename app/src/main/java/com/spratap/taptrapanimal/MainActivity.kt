@@ -126,8 +126,6 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
     private lateinit var adManager: AdManager
     private var gameOverCount = 0          // lifetime counter for frequency cap
     private var streakOfferShownAt = 0     // trapStreak value when offer was last shown
-    // True while a rewarded ad is on screen — prevents onPause() from wiping game state
-    private var isShowingContinueAd = false
 
     // --- View binding ---
     private lateinit var binding: ActivityMainBinding
@@ -534,7 +532,6 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
 
         continueBtn.setOnClickListener {
             dialog.dismiss()
-            isShowingContinueAd = true
             var rewardEarned = false
             adManager.showRewardedAd(
                 onRewarded = {
@@ -542,7 +539,6 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
                     continueGame()
                 },
                 onDismissed = {
-                    isShowingContinueAd = false
                     // Only reset if the player skipped the ad without earning the reward
                     if (!rewardEarned) doFullReset()
                 }
@@ -559,7 +555,6 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
 
     /** Resume after watching a Continue ad — nothing is reset. */
     private fun continueGame() {
-        // Re-apply level in case onPause() touched speed (shouldn't happen now, but safety net)
         binding.gameView.applyLevel(level)
         binding.gameView.startLoop()
         setControlsState()
@@ -1076,10 +1071,8 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
 
     override fun onPause() {
         super.onPause()
-        // Don't wipe game state when a continue-ad is on screen —
-        // the ad takes over the Activity which triggers onPause(), but the
-        // player hasn't lost yet and expects to resume after the ad.
-        if (!isShowingContinueAd) stopGame()
+        // Stop the loop only — do not use stopGame() here or minimizing wipes score/level.
+        if (binding.gameView.gameRunning) pauseGame()
     }
 
     override fun onDestroy() {

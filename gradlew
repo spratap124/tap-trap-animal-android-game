@@ -114,6 +114,20 @@ case "$( uname )" in                #(
   NONSTOP* )        nonstop=true ;;
 esac
 
+# macOS: use Android Studio's bundled JDK when JAVA_HOME is unset (fixes "Unable to locate a Java Runtime" in Terminal)
+if [ -z "${JAVA_HOME:-}" ] && $darwin; then
+  for jbr in \
+    "/Applications/Android Studio.app/Contents/jbr/Contents/Home" \
+    "/Applications/Android Studio Preview.app/Contents/jbr/Contents/Home"
+  do
+    if [ -x "$jbr/bin/java" ]; then
+      JAVA_HOME=$jbr
+      export JAVA_HOME
+      break
+    fi
+  done
+fi
+
 CLASSPATH="\\\"\\\""
 
 
